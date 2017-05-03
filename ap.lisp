@@ -67,12 +67,12 @@
 	 (:params (loop for e in (cadr code) collect
 		       (destructuring-bind (name type &optional (dir :i)) e
 			 (format str "~a : ~a ~a"
-				 type
+				 name
 				 (ecase dir
 				   (:i "in")
 				   (:io "in out")
 				   (:o "out"))
-				 name))))
+				 type))))
 	 (decl (destructuring-bind (bindings) (cdr code)
 		 (with-output-to-string (s)
 		   (loop for e  in bindings do
@@ -202,19 +202,19 @@
 				    (setf A (* A B))
 				    (setf B (- B A))
 				    ))))
-
-(emit-ada :code `(with-compilation-unit ;; procedure in second level
-		     (with Ada.Text_IO) (use Ada.Text_IO)
-		     (with Ada.Integer_Text_IO) (use Ada.Integer_Text_IO)
-		     (procedure (Average ((Q Integer)
-					  (L Alpha :o))
-					 ((decl ((A Integer 1)
-						 (B Integer 2)))
-					  (procedure (Second ((at Integer)))
-						     (setf at Q))
-					  (decl ((D Integer 3)
-						 (C Integer)))))
-				(if (< A Q)
-				    (setf A (* A B))
-				    (setf B (- B A))
-				    ))))
+(with-open-file (s "o.adb" :direction :output :if-exists :supersede)
+ (emit-ada :str s :code `(with-compilation-unit ;; procedure in second level
+		      (with Ada.Text_IO) (use Ada.Text_IO)
+		      (with Ada.Integer_Text_IO) (use Ada.Integer_Text_IO)
+		      (procedure (Average ((Q Integer)
+					   (L Alpha :o))
+					  ((decl ((A Integer 1)
+						  (B Integer 2)))
+					   (procedure (Second ((whou Integer)))
+						      (setf at Q))
+					   (decl ((D Integer 3)
+						  (C Integer)))))
+				 (if (< A Q)
+				     (setf A (* A B))
+				     (setf B (- B A))
+				     )))))
