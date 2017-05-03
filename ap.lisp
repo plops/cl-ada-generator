@@ -73,6 +73,19 @@
 				   (:io "in out")
 				   (:o "out"))
 				 name))))
+	 (decl (destructuring-bind (bindings) (cdr code)
+		 (with-output-to-string (s)
+		   (loop for e  in bindings do
+			(destructuring-bind (name type &optional init) e
+			  (format s "~a : ~a"
+				  (emit-ada :code name)
+				  type
+				  )
+			  (when init
+			    (format s " := ~a" (emit-ada :code init))
+			    )
+			  (format s ";~%")
+			  )))))
 	 (procedure (destructuring-bind ((name params &optional decl) &rest body) (cdr code)
 		      #+nil (push (list :name name
 					 :params params
@@ -105,10 +118,10 @@
 	 (raw (destructuring-bind (string) (cdr code)
 		(format str "~a" string)))
 	 (statement ;; add semicolon
-	  (cond ((member (second code) '(:= setf))
+	  (cond ((member (second code) '(|:=|))
 		 ;; add semicolon to expressions
 		 (format str "~a;" (emit-ada :code (cdr code))))
-		((member (second code) '(if))
+		((member (second code) '(if setf decl))
 		 ;; if for, .. don't need semicolon
 		 (emit-ada :code (cdr code)))
 		(t (format nil "not processable statement: ~a" code))))
@@ -120,7 +133,7 @@
 		    (format nil "(~a (~a))"
 			    op
 			    (emit-ada :code operand))))
-		  ((member (car code) '(<= <))
+		  ((member (car code) '(+ - * / < <=))
 		   ;; handle binary operators
 		   ;; no semicolon
 		   (with-output-to-string (s)
@@ -166,8 +179,11 @@
 (emit-ada :code `(with-compilation-unit
 		     (with Ada.Text_IO) (use Ada.Text_IO)
 		     (with Ada.Integer_Text_IO) (use Ada.Integer_Text_IO)
-		     (procedure (Average () ((A Integer)
-					     (B Integer)))
-				(if A
-				    (setf A B)
+		     (procedure (Average ((Q Integer)
+					  (L Alpha :o))
+					 (decl ((A Integer 3)
+						(B Integer))))
+				(if (< A Q)
+				    (setf A (* A B))
+				    (setf B (- B A))
 				    ))))
