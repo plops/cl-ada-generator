@@ -53,7 +53,7 @@
 		  (format s "begin~%")
 		  (loop for e in (cdr code) do
 		       (format s "  ~a~%"  (emit-ada :code (append '(statement) e))))
-		  (format s "end~%")))
+		  (format s "end;~%")))
 	 (statements (with-output-to-string (s)
 		       (loop for e in (cdr code) do
 			    (format s "  ~a~%"  (emit-ada :code (append '(statement) e))))))
@@ -94,7 +94,10 @@
 		      (format str "procedure ~a ~a is~%~a~%~a"
 			      name
 			      (format nil "(~{~a~^;~})" (emit-ada :code `(:params ,params)))
-			      (emit-ada :code `(statements ,decl))
+			      (if (listp (cdr decl))
+				  (emit-ada :code
+					    `(statements ,@(loop for e in decl collect e)))
+				  (emit-ada :code `(statements ,decl)))
 			      (emit-ada :code `(block ,@body)))))
 	 (with-compilation-unit (format str "~{~a~^~%~}"
 				 (loop for e in (cdr code) collect 
@@ -118,10 +121,10 @@
 	 (raw (destructuring-bind (string) (cdr code)
 		(format str "~a" string)))
 	 (statement ;; add semicolon
-	  (cond ((member (second code) '(|:=|))
+	  (cond ((member (second code) '(|:=| ))
 		 ;; add semicolon to expressions
 		 (format str "~a;" (emit-ada :code (cdr code))))
-		((member (second code) '(if setf decl))
+		((member (second code) '(if setf decl procedure))
 		 ;; if for, .. don't need semicolon
 		 (emit-ada :code (cdr code)))
 		(t (format nil "not processable statement: ~a" code))))
@@ -175,7 +178,19 @@
 #+nil
 (emit-ada :code `(with-compilation-unit
 		     (with Ada)))
+#+nil
+(emit-ada :code `(with-compilation-unit
+		     (with Ada.Text_IO) (use Ada.Text_IO)
+		     (with Ada.Integer_Text_IO) (use Ada.Integer_Text_IO)
+		     (procedure (Average ((Q Integer)
+					  (L Alpha :o))
+					 )
+				(if (< A Q)
+				    (setf A (* A B))
+				    (setf B (- B A))
+				    ))))
 
+#+nil
 (emit-ada :code `(with-compilation-unit
 		     (with Ada.Text_IO) (use Ada.Text_IO)
 		     (with Ada.Integer_Text_IO) (use Ada.Integer_Text_IO)
@@ -183,6 +198,22 @@
 					  (L Alpha :o))
 					 (decl ((A Integer 3)
 						(B Integer))))
+				(if (< A Q)
+				    (setf A (* A B))
+				    (setf B (- B A))
+				    ))))
+
+(emit-ada :code `(with-compilation-unit ;; procedure in second level
+		     (with Ada.Text_IO) (use Ada.Text_IO)
+		     (with Ada.Integer_Text_IO) (use Ada.Integer_Text_IO)
+		     (procedure (Average ((Q Integer)
+					  (L Alpha :o))
+					 ((decl ((A Integer 1)
+						 (B Integer 2)))
+					  (procedure (Second ((at Integer)))
+						     (setf at Q))
+					  (decl ((D Integer 3)
+						 (C Integer)))))
 				(if (< A Q)
 				    (setf A (* A B))
 				    (setf B (- B A))
