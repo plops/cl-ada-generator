@@ -39,6 +39,30 @@
 (defparameter *env-functions* nil)
 (defparameter *env-macros* nil)
 
+;; decimal numbers
+;; 12 0 1E6 123_456
+;; 12.0 0.0 0.456 3.14159_26 -- real literals
+
+;; based numbers
+;; 2#1111_1111#
+;; 16#E#E1
+;; 16#F.FF#E+2
+;; 16#FF#
+;; 016#0ff#
+;; 2#1110_0000#
+;; 2#1.1111_1111_1110#E11
+
+;; character literals
+;; 'A' 'L'
+
+;; string
+;; "Hello World" "He said: ""Huh Huh"""
+
+;; comment
+;; -- starts, until end of line
+
+;; pragma
+
 
 (defun emit-ada (&key code (str nil) (clear-env nil))
   (when clear-env
