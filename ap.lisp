@@ -306,7 +306,7 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; array type								    ;;
+;; array type		(3.6)						    ;;
 ;; 									    ;;
 ;; Examples of type declarations with unconstrained array definitions: 	    ;;
 ;; 									    ;;
@@ -334,6 +334,51 @@
 ;;    2 .. 49 => Line'(1 | Line'Last => '|', others => ' '));		    ;;
 ;;     -- Page is constrained by its initial value to (1..50)		    ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; array with index constraints	 (3.6.1)				         ;;
+;; 										 ;;
+;; Examples of array declarations including an index constraint: 		 ;;
+;; 										 ;;
+;; Board     : Matrix(1 .. 8,  1 .. 8);  --  see 3.6				 ;;
+;; Rectangle : Matrix(1 .. 20, 1 .. 30);					 ;;
+;; Inverse   : Matrix(1 .. N,  1 .. N);  --  N need not be static 		 ;;
+;; 										 ;;
+;; Filter    : Bit_Vector(0 .. 31);						 ;;
+;; 										 ;;
+;; 										 ;;
+;; Example of array declaration with a constrained array subtype: 		 ;;
+;; 										 ;;
+;; My_Schedule : Schedule;  --  all arrays of type Schedule have the same bounds ;;
+;; 										 ;;
+;; 										 ;;
+;; Example of record type with a component that is an array: 			 ;;
+;; 										 ;;
+;; type Var_Line(Length : Natural) is						 ;;
+;;    record									 ;;
+;;       Image : String(1 .. Length);						 ;;
+;;    end record;								 ;;
+;; 										 ;;
+;; Null_Line : Var_Line(0);  --  Null_Line.Image is a null array		 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#+nil
+(defparameter *array-subtype-attribute*
+  '(First First-N Last Last-N Range Range-N Length Length-N))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; string type (3.6.3)											    ;;
+;; 													    ;;
+;; Stars      : String(1 .. 120) := (1 .. 120 => '*' );							    ;;
+;; Question   : constant String  := "How many characters?";						    ;;
+;;                                                       -- Question'First = 1, Question'Last = 20	    ;;
+;;                                                       -- Question'Length = 20 (the number of characters) ;;
+;; 													    ;;
+;; Ask_Twice  : String  := Question & Question;          -- constrained to (1..40)			    ;;
+;; Ninety_Six : constant Roman   := "XCVI";              -- see 3.5.2 and 3.6				    ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 (defun emit-ada (&key code (str nil) (clear-env nil))
