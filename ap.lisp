@@ -195,7 +195,7 @@
 ;; type Special_Key is new Key_Manager.Key;   --  see 7.3.1		  ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
+#+nil
 (defparameter *scalar-subtype-attribute*
   '(First Last Range Base Min Max Succ Pred Wide_Wide_Image Wide_Image Image Wide_Wide_Width
     Wide_Width Width Wide_Wide_Value Wide_Value Value))
@@ -233,6 +233,107 @@
 ;; subtype Major   is Suit  range Hearts .. Spades;				 ;;
 ;; subtype Rainbow is Color range Red .. Blue;  --  the Color Red, not the Light ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; character type					    ;;
+;; 							    ;;
+;; type Roman_Digit is ('I', 'V', 'X', 'L', 'C', 'D', 'M'); ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#+nil
+(defparameter *modular-subtype-attribute*
+  '(Mod Modulus))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; integer type										      ;;
+;; 											      ;;
+;; -- Integer has two predefined subtypes, declared in the visible part of package Standard:  ;;
+;; 											      ;;
+;; subtype Natural  is Integer range 0 .. Integer'Last;					      ;;
+;; subtype Positive is Integer range 1 .. Integer'Last;					      ;;
+;; 											      ;;
+;; type Page_Num  is range 1 .. 2_000;							      ;;
+;; type Line_Size is range 1 .. Max_Line_Size;						      ;;
+;; 											      ;;
+;; subtype Small_Int   is Integer   range -10 .. 10;					      ;;
+;; subtype Column_Ptr  is Line_Size range 1 .. 10;					      ;;
+;; subtype Buffer_Size is Integer   range 0 .. Max;					      ;;
+;; 											      ;;
+;; type Byte        is mod 256; -- an unsigned byte					      ;;
+;; type Hash_Index  is mod 97;  -- modulus is prime					      ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+#+nil
+(defparameter *discrete-subtype-attribute*
+  '(Pos Val First_Valid Last_Valid))
+
+#+nil
+(defparameter *floating-point-subtype-attribute*
+  '(Digits))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; floating point type								       ;;
+;; 										       ;;
+;; type Coefficient is digits 10 range -1.0 .. 1.0;				       ;;
+;; type Real is digits 8;							       ;;
+;; type Mass is digits 7 range 0.0 .. 1.0E35;					       ;;
+;; subtype Probability is Real range 0.0 .. 1.0;   --   a subtype with a smaller range ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+#+nil
+(defparameter *fixed-point-subtype-attribute*
+  '(Small Delta Fore Aft))
+#+nil
+(defparameter *decimal-fixed-point-subtype-attribute*
+  '(Digits Scale Round))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; fixed point type						   ;;
+;; 								   ;;
+;; type Volt is delta 0.125 range 0.0 .. 255.0;			   ;;
+;;   -- A pure fraction which requires all the available	   ;;
+;;   -- space in a word can be declared as the type Fraction:	   ;;
+;; type Fraction is delta System.Fine_Delta range -1.0 .. 1.0;	   ;;
+;;   -- Fraction'Last = 1.0 – System.Fine_Delta			   ;;
+;; type Money is delta 0.01 digits 15;  -- decimal fixed point	   ;;
+;; subtype Salary is Money digits 10;				   ;;
+;;   -- Money'Last = 10.0**13 – 0.01, Salary'Last = 10.0**8 – 0.01 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; array type								    ;;
+;; 									    ;;
+;; Examples of type declarations with unconstrained array definitions: 	    ;;
+;; 									    ;;
+;; type Vector     is array(Integer  range <>) of Real;			    ;;
+;; type Matrix     is array(Integer  range <>, Integer range <>) of Real;   ;;
+;; type Bit_Vector is array(Integer  range <>) of Boolean;		    ;;
+;; type Roman      is array(Positive range <>) of Roman_Digit; -- see 3.5.2 ;;
+;; 									    ;;
+;; 									    ;;
+;; Examples of type declarations with constrained array definitions: 	    ;;
+;; 									    ;;
+;; type Table    is array(1 .. 10) of Integer;				    ;;
+;; type Schedule is array(Day) of Boolean;				    ;;
+;; type Line     is array(1 .. Max_Line_Size) of Character;		    ;;
+;; 									    ;;
+;; 									    ;;
+;; Examples of object declarations with array type definitions: 	    ;;
+;; 									    ;;
+;; Grid      : array(1 .. 80, 1 .. 100) of Boolean;			    ;;
+;; Mix       : array(Color range Red .. Green) of Boolean;		    ;;
+;; Msg_Table : constant array(Error_Code) of access constant String :=	    ;;
+;;       (Too_Big => new String'("Result too big"), Too_Small => ...);	    ;;
+;; Page      : array(Positive range <>) of Line :=  --  an array of arrays  ;;
+;;   (1 | 50  => Line'(1 | Line'Last => '+', others => '-'),  -- see 4.3.3  ;;
+;;    2 .. 49 => Line'(1 | Line'Last => '|', others => ' '));		    ;;
+;;     -- Page is constrained by its initial value to (1..50)		    ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 (defun emit-ada (&key code (str nil) (clear-env nil))
