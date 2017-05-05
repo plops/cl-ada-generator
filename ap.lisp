@@ -151,6 +151,11 @@
 					       `(statements ,@(loop for e in decl collect e)))
 				     (emit-ada :code `(statements ,decl)))
 				 (emit-ada :code `(block ,@body)))))
+	    (range
+	     (if (cdr code)
+		 (destructuring-bind (start end) (cdr code)
+		   (format str "~a .. ~a" (emit-ada :code start) (emit-ada :code end)))
+		 (format str "<>")))
 	    (with-compilation-unit (format str "~{~a~^~%~}"
 				    (loop for e in (cdr code) collect 
 					 (emit-ada :code e))))
@@ -228,31 +233,42 @@
 
 #|
 ;; orgtbl-mode
-| s-expression                                                           | Ada                      | priority |
-|------------------------------------------------------------------------+--------------------------+----------|
-| (. a b c)                                                              | a.b.c                    |        0 |
-| (aref a 4 3)                                                           | a(4,3)                   |        0 |
-| (.aref a (4 3) (6))                                                    | a(4,3)(6)                |        4 |
-| (aref a (range 0 3))                                                   | a(0 .. 3)                |        0 |
-| (attrib a Digits)                                                      | a'Digits                 |        0 |
-| (attrib a (aref Digits 3) Mod)                                         | a'Digits(3)'Mod          |        0 |
-| (string bla)                                                           | "bla"                    |        0 |
-| (char c)                                                               | 'c'                      |        0 |
-| (hex #x12345FFF)                                                       | 16#1234_5FFF#            |        1 |
-| (bit #b11100000)                                                       | 2#1110_0000#             |        1 |
-| (with-use Types)                                                       | with Types; use Types;   |        0 |
-| (with lib1 lib2)                                                       | use lib1, lib2;          |        0 |
-| (with Common_Units)                                                    | with Common_Units;       |        0 |
-| (use PkA PkB)                                                          | use PkA, PkB;            |        0 |
-| (use-all-type TpA Tf)                                                  | use all type TpA, Tf;    |        2 |
-| (use-type TpA Tf)                                                      | use type TpA, Tf;        |        2 |
-| (private-with lib1 lib2)                                               | private with lib1, lib2; |        2 |
-| (limited-with .. )                                                     |                          |        2 |
-| (limited-private-with ..)                                              |                          |        2 |
-| (procedure (My_Proc ((Q Integer)) ((decl ((A Integer)) (procedure ..)) |                          |        0 |
-| (procedure (<name> [params] [decl:procedure]) <body>)                  |                          |        0 |
-| (function (<name> [params] <return> [decl:procedure]) <body)           |                          |        0 |
-|                                                                        |                          |          |
+| s-expression                                                             | Ada                                                        | priority |
+|--------------------------------------------------------------------------+------------------------------------------------------------+----------|
+| (. a b c)                                                                | a.b.c                                                      |        0 |
+| (aref a 4 3)                                                             | a(4,3)                                                     |        0 |
+| (.aref a (4 3) (6))                                                      | a(4,3)(6)                                                  |        4 |
+| (range 0 3)                                                              | 0 .. 3                                                     |        0 |
+| (range 0 (+ A 3))                                                        | 0 .. A+3                                                   |        0 |
+| (range)                                                                  | <>                                                         |        0 |
+| (aref a (range 0 3))                                                     | a(0 .. 3)                                                  |        0 |
+| (attrib a Digits)                                                        | a'Digits                                                   |        0 |
+| (attrib a (aref Digits 3) Mod)                                           | a'Digits(3)'Mod                                            |        0 |
+| (string bla)                                                             | "bla"                                                      |        0 |
+| (char c)                                                                 | 'c'                                                        |        0 |
+| (hex #x12345FFF)                                                         | 16#1234_5FFF#                                              |        1 |
+| (bit #b11100000)                                                         | 2#1110_0000#                                               |        1 |
+| (with-use Types)                                                         | with Types; use Types;                                     |        0 |
+| (with lib1 lib2)                                                         | use lib1, lib2;                                            |        0 |
+| (with Common_Units)                                                      | with Common_Units;                                         |        0 |
+| (use PkA PkB)                                                            | use PkA, PkB;                                              |        0 |
+| (use-all-type TpA Tf)                                                    | use all type TpA, Tf;                                      |        2 |
+| (use-type TpA Tf)                                                        | use type TpA, Tf;                                          |        2 |
+| (private-with lib1 lib2)                                                 | private with lib1, lib2;                                   |        2 |
+| (limited-with .. )                                                       |                                                            |        2 |
+| (limited-private-with ..)                                                |                                                            |        2 |
+| (procedure (My_Proc ((Q Integer)) ((decl ((A Integer)) (procedure ..))   |                                                            |        0 |
+| (procedure (<name> [params] [decl:procedure]) <body>)                    |                                                            |        0 |
+| (function (<name> [params] <return> [decl:procedure]) <body)             |                                                            |        0 |
+| (if <cond> <yes> [<no>])                                                 |                                                            |        0 |
+| (array (0 1) Real)                                                       | array (0 .. 1) of Real                                     |          |
+| (array ((1 80) (1 100)) Boolean)                                         | array (1 .. 80, 1 .. 100) of Boolean                       |          |
+| (array Error_Code    "constant String")                                  | array (Error_Code) of constant String                      |          |
+| (array Error_Code    constant-String)                                    | array (Error_Code) of constant String                      |          |
+| (array (Integer :range (range)) Real)                                    | array (Integer range <>) of Real                           |          |
+| (array ((Integer :range (range)) (Color :range (range Red Green))) Real) | array (Integer range <>, Color range Red .. Green) of Real |          |
+|                                                                          |                                                            |          |
+
 
 |#                             
   
@@ -298,6 +314,11 @@
 				    (setf A (* A B))
 				    (setf B (- B A))
 				    ))))
+
+;;type CRTP_Raw is array (1 .. CRTP_MAX_DATA_SIZE + 1) of T_Uint8
+
+(emit-ada :code `(with-compilation-unit
+		     (type CRTP_Raw (array ((1 (+ CRTP_MAX_DATA_SIZE 1))) :type T_Uint8))))
 
 (progn
   (with-open-file (s "o.adb" :direction :output :if-exists :supersede)
