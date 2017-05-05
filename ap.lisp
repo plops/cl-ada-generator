@@ -62,7 +62,17 @@
 ;; -- starts, until end of line
 
 ;; pragma
+;; pragma List(Off)
+;; pragma Assert(Exists(File_Name),Message => "Nonexistent file");
 
+(defparameter *ada-keywords*
+  '(abort abs abstract accept access aliased all and array at begin
+    body case constant declare delay delta digits do else elsif end
+    entry exception exit for function generic goto if in interface isqrt
+    limited loop mod new not null of or others out overriding package
+    pragma private procedure protected raise range record rem renames
+    requeue return reverse select separate some subtype synchronized
+    tagged task terminate then type until use when while with xor))
 
 (defun emit-ada (&key code (str nil) (clear-env nil))
   (when clear-env
@@ -70,132 +80,132 @@
 	  *env-macros* nil))
   (if code
       (if (listp code)
-       (case (car code)
-	 (with (format str "with ~s;" (cadr code)))
-	 (use (format str "use ~s;" (cadr code)))
-	 (block (with-output-to-string (s)
-		  (format s "begin~%")
-		  (loop for e in (cdr code) do
-		       (format s "  ~a~%"  (emit-ada :code (append '(statement) e))))
-		  (format s "end;~%")))
-	 (statements (with-output-to-string (s)
-		       (loop for e in (cdr code) do
-			    (format s "  ~a~%"  (emit-ada :code (append '(statement) e))))))
-	 (defmacro (destructuring-bind ((name params) &rest macro-body) (cdr code)
-		     (push (list :name name
-				 :params params
-				 :body macro-body)
-			   *env-macros*)))
-	 (macroexpand (destructuring-bind (macro &rest rest) (cdr code)
-			(format str "~a" (emit-ada :code (macroexpand-1 macro)))))
-	 (:params (loop for e in (cadr code) collect
-		       (destructuring-bind (name type &optional (dir :i)) e
-			 (format str "~a : ~a ~a"
+	  (case (car code)
+	    (with (format str "with ~s;" (cadr code)))
+	    (use (format str "use ~s;" (cadr code)))
+	    (block (with-output-to-string (s)
+		     (format s "begin~%")
+		     (loop for e in (cdr code) do
+			  (format s "  ~a~%"  (emit-ada :code (append '(statement) e))))
+		     (format s "end;~%")))
+	    (statements (with-output-to-string (s)
+			  (loop for e in (cdr code) do
+			       (format s "  ~a~%"  (emit-ada :code (append '(statement) e))))))
+	    (defmacro (destructuring-bind ((name params) &rest macro-body) (cdr code)
+			(push (list :name name
+				    :params params
+				    :body macro-body)
+			      *env-macros*)))
+	    (macroexpand (destructuring-bind (macro &rest rest) (cdr code)
+			   (format str "~a" (emit-ada :code (macroexpand-1 macro)))))
+	    (:params (loop for e in (cadr code) collect
+			  (destructuring-bind (name type &optional (dir :i)) e
+			    (format str "~a : ~a ~a"
+				    name
+				    (ecase dir
+				      (:i "in")
+				      (:io "in out")
+				      (:o "out"))
+				    type))))
+	    (decl (destructuring-bind (bindings) (cdr code)
+		    (with-output-to-string (s)
+		      (loop for e  in bindings do
+			   (destructuring-bind (name type &optional init) e
+			     (format s "~a : ~a"
+				     (emit-ada :code name)
+				     type
+				     )
+			     (when init
+			       (format s " := ~a" (emit-ada :code init))
+			       )
+			     (format s ";~%")
+			     )))))
+	    (procedure (destructuring-bind ((name params &optional decl) &rest body) (cdr code)
+			 #+nil (push (list :name name
+					   :params params
+					   :body body)
+				     *env-functions*)
+			 (format str "procedure ~a ~a is~%~a~%~a"
 				 name
-				 (ecase dir
-				   (:i "in")
-				   (:io "in out")
-				   (:o "out"))
-				 type))))
-	 (decl (destructuring-bind (bindings) (cdr code)
-		 (with-output-to-string (s)
-		   (loop for e  in bindings do
-			(destructuring-bind (name type &optional init) e
-			  (format s "~a : ~a"
-				  (emit-ada :code name)
-				  type
-				  )
-			  (when init
-			    (format s " := ~a" (emit-ada :code init))
-			    )
-			  (format s ";~%")
-			  )))))
-	 (procedure (destructuring-bind ((name params &optional decl) &rest body) (cdr code)
-		      #+nil (push (list :name name
-					 :params params
-					 :body body)
-				   *env-functions*)
-		      (format str "procedure ~a ~a is~%~a~%~a"
-			      name
-			      (format nil "(~{~a~^;~})" (emit-ada :code `(:params ,params)))
-			      (if (listp (cdr decl))
-				  (emit-ada :code
-					    `(statements ,@(loop for e in decl collect e)))
-				  (emit-ada :code `(statements ,decl)))
-			      (emit-ada :code `(block ,@body)))))
-	 (with-compilation-unit (format str "~{~a~^~%~}"
-				 (loop for e in (cdr code) collect 
-				      (emit-ada :code e))))
-	 (if (destructuring-bind (condition true-statement &optional false-statement) (cdr code)
-	       (with-output-to-string (s)
-		 (format s "if ( ~a ) then ~a"
-			 (emit-ada :code condition)
-			 (emit-ada :code `(statements ,true-statement)))
-		 (when false-statement
-		  (format s "else ~a" (emit-ada :code `(statements ,false-statement))))
-		 (format s "end if;"))))
-	 (setf (destructuring-bind (&rest args) (cdr code)
-		(with-output-to-string (s)
-		  ;; handle multiple assignments
-		  (loop for i below (length args) by 2 do
-		       (format s "~a"
-			       (emit-ada :code `(statement |:=| ,(elt args i) ,(elt args (1+ i))))))
-		  (if (< 2 (length args))
-		      (format s "~%")))))
-	 (raw (destructuring-bind (string) (cdr code)
-		(format str "~a" string)))
-	 (statement ;; add semicolon
-	  (cond ((member (second code) '(|:=| ))
-		 ;; add semicolon to expressions
-		 (format str "~a;" (emit-ada :code (cdr code))))
-		((member (second code) '(if setf decl procedure))
-		 ;; if for, .. don't need semicolon
-		 (emit-ada :code (cdr code)))
-		(t (format nil "not processable statement: ~a" code))))
+				 (format nil "(~{~a~^;~})" (emit-ada :code `(:params ,params)))
+				 (if (listp (cdr decl))
+				     (emit-ada :code
+					       `(statements ,@(loop for e in decl collect e)))
+				     (emit-ada :code `(statements ,decl)))
+				 (emit-ada :code `(block ,@body)))))
+	    (with-compilation-unit (format str "~{~a~^~%~}"
+				    (loop for e in (cdr code) collect 
+					 (emit-ada :code e))))
+	    (if (destructuring-bind (condition true-statement &optional false-statement) (cdr code)
+		  (with-output-to-string (s)
+		    (format s "if ( ~a ) then ~a"
+			    (emit-ada :code condition)
+			    (emit-ada :code `(statements ,true-statement)))
+		    (when false-statement
+		      (format s "else ~a" (emit-ada :code `(statements ,false-statement))))
+		    (format s "end if;"))))
+	    (setf (destructuring-bind (&rest args) (cdr code)
+		    (with-output-to-string (s)
+		      ;; handle multiple assignments
+		      (loop for i below (length args) by 2 do
+			   (format s "~a"
+				   (emit-ada :code `(statement |:=| ,(elt args i) ,(elt args (1+ i))))))
+		      (if (< 2 (length args))
+			  (format s "~%")))))
+	    (raw (destructuring-bind (string) (cdr code)
+		   (format str "~a" string)))
+	    (statement ;; add semicolon
+	     (cond ((member (second code) '(|:=| ))
+		    ;; add semicolon to expressions
+		    (format str "~a;" (emit-ada :code (cdr code))))
+		   ((member (second code) '(if setf decl procedure))
+		    ;; if for, .. don't need semicolon
+		    (emit-ada :code (cdr code)))
+		   (t (format nil "not processable statement: ~a" code))))
 	 
-	 (t (cond ((and (= 2 (length code)) (member (car code)  '(- ~ !)))
+	    (t (cond ((and (= 2 (length code)) (member (car code)  '(- ~ !)))
 		      ;; handle unary operators, i.e. - ~ !, this code
 		      ;; needs to be placed before binary - operator!
-		  (destructuring-bind (op operand) code
-		    (format nil "(~a (~a))"
-			    op
-			    (emit-ada :code operand))))
-		  ((member (car code) '(+ - * / < <=))
-		   ;; handle binary operators
-		   ;; no semicolon
-		   (with-output-to-string (s)
-		     (format s "(")
-		     (loop for e in (cdr code)
-			and i below (1- (length (cdr code))) do
-			  (format s "~a ~a " (emit-ada :code e) (car code)))
-		     (format s "~a)" (emit-ada :code (car (last (cdr code)))))))
+		      (destructuring-bind (op operand) code
+			(format nil "(~a (~a))"
+				op
+				(emit-ada :code operand))))
+		     ((member (car code) '(+ - * / < <=))
+		      ;; handle binary operators
+		      ;; no semicolon
+		      (with-output-to-string (s)
+			(format s "(")
+			(loop for e in (cdr code)
+			   and i below (1- (length (cdr code))) do
+			     (format s "~a ~a " (emit-ada :code e) (car code)))
+			(format s "~a)" (emit-ada :code (car (last (cdr code)))))))
 		  
-		  ((member (car code) '(|:=|))
-		   ;; handle assignment, i.e. :=
-		   (destructuring-bind (op lvalue rvalue) code
-		    (format str "~a ~a ~a"
-			    (emit-ada :code lvalue)
-			    op
-			    (emit-ada :code rvalue))))
-		  ((member (car code)  '(and or xor not))
-		   ;; handle logical operators, i.e. and
-		   (destructuring-bind (op left right) code
-		    (format str "(~a ~a ~a)"
-			    (emit-ada :code left)
-			    op
-			    (emit-ada :code right))))
-		  (t (format nil "not processable: ~a" code)))))
-       (cond
-	 ((or (symbolp code)
-	      (stringp code)) ;; print variable
-	  (format nil "~a" code))
-	 ((numberp code) ;; print constants
-	      (cond ((integerp code) (format str "~a" code))
-		    ((floatp code)
-		     (typecase code
-		       (single-float (format str "(~a)" (print-sufficient-digits-f32 code)))
-		       (double-float (format str "(~a)" (print-sufficient-digits-f64 code)))))
-		    ))))
+		     ((member (car code) '(|:=|))
+		      ;; handle assignment, i.e. :=
+		      (destructuring-bind (op lvalue rvalue) code
+			(format str "~a ~a ~a"
+				(emit-ada :code lvalue)
+				op
+				(emit-ada :code rvalue))))
+		     ((member (car code)  '(and or xor not))
+		      ;; handle logical operators, i.e. and
+		      (destructuring-bind (op left right) code
+			(format str "(~a ~a ~a)"
+				(emit-ada :code left)
+				op
+				(emit-ada :code right))))
+		     (t (format nil "not processable: ~a" code)))))
+	  (cond
+	    ((or (symbolp code)
+		 (stringp code)) ;; print variable
+	     (format nil "~a" code))
+	    ((numberp code) ;; print constants
+	     (cond ((integerp code) (format str "~a" code))
+		   ((floatp code)
+		    (typecase code
+		      (single-float (format str "(~a)" (print-sufficient-digits-f32 code)))
+		      (double-float (format str "(~a)" (print-sufficient-digits-f64 code)))))
+		   ))))
       ""))
 
 
