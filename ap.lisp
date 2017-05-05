@@ -267,6 +267,7 @@
 | (array Error_Code    constant-String)                                    | array (Error_Code) of constant String                      |          |
 | (array (Integer :range (range)) Real)                                    | array (Integer range <>) of Real                           |          |
 | (array ((Integer :range (range)) (Color :range (range Red Green))) Real) | array (Integer range <>, Color range Red .. Green) of Real |          |
+| (=> (range 1 120) (char *))                                              | 1 .. 120 => '*'                                            |          |
 |                                                                          |                                                            |          |
 
 
