@@ -638,6 +638,95 @@
 ;; Give_Message.all;                 -- call with no parameters				 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; incomplete type						 ;;
+;; 								 ;;
+;; Example of a recursive type: 				 ;;
+;; 								 ;;
+;; type Cell;  --  incomplete type declaration			 ;;
+;; type Link is access Cell;					 ;;
+;; 								 ;;
+;; type Cell is							 ;;
+;;    record							 ;;
+;;       Value  : Integer;					 ;;
+;;       Succ   : Link;						 ;;
+;;       Pred   : Link;						 ;;
+;;    end record;						 ;;
+;; 								 ;;
+;; Head   : Link  := new Cell'(0, null, null);			 ;;
+;; Next   : Link  := Head.Succ;					 ;;
+;; 								 ;;
+;; Examples of mutually dependent access types:			 ;;
+;; 								 ;;
+;; type Person(<>);    -- incomplete type declaration		 ;;
+;; type Car is tagged; -- incomplete type declaration		 ;;
+;; 								 ;;
+;; type Person_Name is access Person;				 ;;
+;; type Car_Name    is access all Car'Class;			 ;;
+;; 								 ;;
+;; type Car is tagged						 ;;
+;;    record							 ;;
+;;       Number  : Integer;					 ;;
+;;       Owner   : Person_Name;					 ;;
+;;    end record;						 ;;
+;; 								 ;;
+;; type Person(Sex : Gender) is					 ;;
+;;    record							 ;;
+;;       Name     : String(1 .. 20);				 ;;
+;;       Birth    : Date;					 ;;
+;;       Age      : Integer range 0 .. 130;			 ;;
+;;       Vehicle  : Car_Name;					 ;;
+;;       case Sex is						 ;;
+;;          when M => Wife           : Person_Name(Sex => F);	 ;;
+;;          when F => Husband        : Person_Name(Sex => M);	 ;;
+;;       end case;						 ;;
+;;    end record;						 ;;
+;; 								 ;;
+;; My_Car, Your_Car, Next_Car : Car_Name := new Car;  -- see 4.8 ;;
+;; George : Person_Name := new Person(M);			 ;;
+;;    ...							 ;;
+;; George.Vehicle := Your_Car;					 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#+nil
+(defparameter *access-subtype-attribute*
+  '(Access))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; names									  ;;
+;; 										  ;;
+;; Examples of direct names: 							  ;;
+;; 										  ;;
+;; Pi       -- the direct name of a number           (see 3.3.2)		  ;;
+;; Limit    -- the direct name of a constant         (see 3.3.1)		  ;;
+;; Count    -- the direct name of a scalar variable  (see 3.3.1)		  ;;
+;; Board    -- the direct name of an array variable  (see 3.6.1)		  ;;
+;; Matrix   -- the direct name of a type             (see 3.6)			  ;;
+;; Random   -- the direct name of a function         (see 6.1)			  ;;
+;; Error    -- the direct name of an exception       (see 11.1)			  ;;
+;; 										  ;;
+;; Examples of dereferences:							  ;;
+;; 										  ;;
+;; Next_Car.all        --  explicit dereference denoting the object designated by ;;
+;;                     --  the access variable Next_Car (see 3.10.1)		  ;;
+;; Next_Car.Owner      --  selected component with implicit dereference;	  ;;
+;;                     --  same as Next_Car.all.Owner				  ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; indexed components								    ;;
+;; 										    ;;
+;; Examples of indexed components: 						    ;;
+;; 										    ;;
+;;  My_Schedule(Sat)     --  a component of a one-dimensional array     (see 3.6.1) ;;
+;;  Page(10)             --  a component of a one-dimensional array     (see 3.6)   ;;
+;;  Board(M, J + 1)      --  a component of a two-dimensional array     (see 3.6.1) ;;
+;;  Page(10)(20)         --  a component of a component                 (see 3.6)   ;;
+;;  Request(Medium)      --  an entry in a family of entries            (see 9.1)   ;;
+;;  Next_Frame(L)(M, N)  --  a component of a function call             (see 6.1)   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 (defun emit-ada (&key code (str nil) (clear-env nil))
