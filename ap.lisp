@@ -39,31 +39,52 @@
 (defparameter *env-functions* nil)
 (defparameter *env-macros* nil)
 
-;; decimal numbers
-;; 12 0 1E6 123_456
-;; 12.0 0.0 0.456 3.14159_26 -- real literals
+;; ada reference manual
+;; http://www.ada-auth.org/standards/rm12_w_tc1/html/RM-3-2-2.html
 
-;; based numbers
-;; 2#1111_1111#
-;; 16#E#E1
-;; 16#F.FF#E+2
-;; 16#FF#
-;; 016#0ff#
-;; 2#1110_0000#
-;; 2#1.1111_1111_1110#E11
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; decimal numbers			      ;;
+;; 					      ;;
+;; 12 0 1E6 123_456			      ;;
+;; 12.0 0.0 0.456 3.14159_26 -- real literals ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; character literals
-;; 'A' 'L'
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; based numbers	  ;;
+;; 			  ;;
+;; 2#1111_1111#		  ;;
+;; 16#E#E1		  ;;
+;; 16#F.FF#E+2		  ;;
+;; 16#FF#		  ;;
+;; 016#0ff#		  ;;
+;; 2#1110_0000#		  ;;
+;; 2#1.1111_1111_1110#E11 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; string
-;; "Hello World" "He said: ""Huh Huh"""
+;;;;;;;;;;;;;;;;;;;;;;;;
+;; character literals ;;
+;; 		      ;;
+;; 'A' 'L'	      ;;
+;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; comment
-;; -- starts, until end of line
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; string			        ;;
+;; 				        ;;
+;; "Hello World" "He said: ""Huh Huh""" ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; pragma
-;; pragma List(Off)
-;; pragma Assert(Exists(File_Name),Message => "Nonexistent file");
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; comment		        ;;
+;; 			        ;;
+;; -- starts, until end of line ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; pragma							   ;;
+;; 								   ;;
+;; pragma List(Off)						   ;;
+;; pragma Assert(Exists(File_Name),Message => "Nonexistent file"); ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defparameter *ada-keywords*
   '(abort abs abstract accept access aliased all and array at begin
@@ -73,6 +94,45 @@
     pragma private procedure protected raise range record rem renames
     requeue return reverse select separate some subtype synchronized
     tagged task terminate then type until use when while with xor))
+
+
+;; declaration
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; type declaration						  ;;
+;; 								  ;;
+;; type Color is (White, Red, Yellow, Green, Blue, Brown, Black); ;;
+;; type Column is range 1 .. 72;				  ;;
+;; type Table is array(1 .. 10) of Integer;			  ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; subtype							       ;;
+;; 								       ;;
+;; subtype Rainbow   is Color range Red .. Blue;        --  see 3.2.1  ;;
+;; subtype Red_Blue  is Rainbow;				       ;;
+;; subtype Int       is Integer;				       ;;
+;; subtype Small_Int is Integer range -10 .. 10;		       ;;
+;; subtype Up_To_K   is Column range 1 .. K;            --  see 3.2.1  ;;
+;; subtype Square    is Matrix(1 .. 10, 1 .. 10);       --  see 3.6    ;;
+;; subtype Male      is Person(Sex => M);               --  see 3.10.1 ;;
+;; subtype Binop_Ref is not null Binop_Ptr;			       ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; predicates						       ;;
+;; 								       ;;
+;; subtype Basic_Letter is Character -- See A.3.2 for "basic letter".  ;;
+;;    with Static_Predicate => Basic_Letter in 'A'..'Z' | 'a'..'z'|;   ;;
+;; subtype Even_Integer is Integer				       ;;
+;;    with Dynamic_Predicate => Even_Integer mod 2 = 0,		       ;;
+;;        Predicate_Failure => "Even_Integer must be a multiple of 2"; ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
 
 (defun emit-ada (&key code (str nil) (clear-env nil))
   (when clear-env
