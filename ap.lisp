@@ -208,30 +208,22 @@
 		   ))))
       ""))
 
+#|
+;; orgtbl-mode
+| s-expression                   | Ada             | priority |
+|--------------------------------+-----------------+----------|
+| (. a b c)                      | a.b.c           |        0 |
+| (aref a 4 3)                   | a(4,3)          |        0 |
+| (.aref a (4 3) (6))            | a(4,3)(6)       |        4 |
+| (aref a (range 0 3))           | a(0 .. 3)       |        0 |
+| (attrib a Digits)              | a'Digits        |        0 |
+| (attrib a (aref Digits 3) Mod) | a'Digits(3)'Mod |        0 |
+| (string bla)                   | "bla"           |        0 |
+| (char c)                       | 'c'             |        0 |
+| (hex #x12345FFF)               | 16#1234_5FFF#   |        1 |
+| (bit #b11100000)               | 2#1110_0000#    |        1 |
 
-;; (. a b c)                       a.b.c
-;; (aref a 4 3)                    a(4,3)
-;; ;;(.aref a (4 3) (6))           a(4,3)(6)
-;; (aref a (range 0 3))            a(0 .. 3)
-;; (attrib a Digits)               a'Digits
-;; (attrib a (aref Digits 3) Mod)  a'Digits(3)'Mod
-;;
-;;
-;;
-;;
-;;
-;;
-;;
-;;
-;;
-;;
-;;
-;;
-;;
-;;
-;;
-;;
-
+|#
 #+nil
 (emit-ada :code `(with-compilation-unit
 		     (with Ada)))
