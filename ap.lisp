@@ -42,6 +42,9 @@
 ;; ada reference manual
 ;; http://www.ada-auth.org/standards/rm12_w_tc1/html/RM-3-2-2.html
 
+;; spark 2014 reference manual
+;; http://docs.adacore.com/spark2014-docs/html/lrm/declarations-and-types.html
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; decimal numbers			      ;;
 ;; 					      ;;
@@ -106,6 +109,9 @@
 ;; type Table is array(1 .. 10) of Integer;			  ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; spark forbids 'access'
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; subtype							       ;;
@@ -132,6 +138,101 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; object								      ;;
+;; 									      ;;
+;; --  the multiple object declaration 					      ;;
+;; 									      ;;
+;; John, Paul : not null Person_Name := new Person(Sex => M);  --  see 3.10.1 ;;
+;; 									      ;;
+;; --  is equivalent to the two single object declarations in the order given ;;
+;; 									      ;;
+;; John : not null Person_Name := new Person(Sex => M);			      ;;
+;; Paul : not null Person_Name := new Person(Sex => M);			      ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; variable						  ;;
+;; 							  ;;
+;; Count, Sum  : Integer;				  ;;
+;; Size        : Integer range 0 .. 10_000 := 0;	  ;;
+;; Sorted      : Boolean := False;			  ;;
+;; Color_Table : array(1 .. Max) of Color;		  ;;
+;; Option      : Bit_Vector(1 .. 10) := (others => True); ;;
+;; Hello       : aliased String := "Hi, world.";	  ;;
+;; θ, φ        : Float range -π .. +π;			  ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; constant					       ;;
+;; 						       ;;
+;; Limit     : constant Integer := 10_000;	       ;;
+;; Low_Limit : constant Integer := Limit/10;	       ;;
+;; Tolerance : constant Real := Dispersion(1.15);      ;;
+;; Hello_Msg : constant access String := Hello'Access; ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; number declaration								     ;;
+;; 										     ;;
+;; Two_Pi        : constant := 2.0*Ada.Numerics.Pi;   -- a real number (see A.5)     ;;
+;; 10/2										     ;;
+;; Max           : constant := 500;                   -- an integer number	     ;;
+;; Max_Line_Size : constant := Max/6;                 -- the integer 83		     ;;
+;; Power_16      : constant := 2**16;                 -- the integer 65_536	     ;;
+;; One, Un, Eins : constant := 1;                     -- three different names for 1 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; derived type								  ;;
+;; 									  ;;
+;; type Local_Coordinate is new Coordinate;   --  two different types	  ;;
+;; type Midweek is new Day range Tue .. Thu;  --  see 3.5.1		  ;;
+;; type Counter is new Positive;              --  same range as Positive  ;;
+;; type Special_Key is new Key_Manager.Key;   --  see 7.3.1		  ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+(defparameter *scalar-subtype-attribute*
+  '(First Last Range Base Min Max Succ Pred Wide_Wide_Image Wide_Image Image Wide_Wide_Width
+    Wide_Width Width Wide_Wide_Value Wide_Value Value))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; scalar type						     ;;
+;; 							     ;;
+;; -10 .. 10						     ;;
+;; X .. X + 1						     ;;
+;; 0.0 .. 2.0*Pi					     ;;
+;; Red .. Green     -- see 3.5.1			     ;;
+;; 1 .. 0           -- a null range			     ;;
+;; Table'Range      -- a range attribute reference (see 3.6) ;;
+;; 							     ;;
+;; 							     ;;
+;; Examples of range constraints: 			     ;;
+;; 							     ;;
+;; range -999.0 .. +999.0				     ;;
+;; range S'First+1 .. S'Last-1				     ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; enumeration type								 ;;
+;; 										 ;;
+;; type Day    is (Mon, Tue, Wed, Thu, Fri, Sat, Sun);				 ;;
+;; type Suit   is (Clubs, Diamonds, Hearts, Spades);				 ;;
+;; type Gender is (M, F);							 ;;
+;; type Level  is (Low, Medium, Urgent);					 ;;
+;; type Color  is (White, Red, Yellow, Green, Blue, Brown, Black);		 ;;
+;; type Light  is (Red, Amber, Green); -- Red and Green are overloaded		 ;;
+;; type Hexa   is ('A', 'B', 'C', 'D', 'E', 'F');				 ;;
+;; type Mixed  is ('A', 'B', '*', B, None, '?', '%');				 ;;
+;; subtype Weekday is Day   range Mon .. Fri;					 ;;
+;; subtype Major   is Suit  range Hearts .. Spades;				 ;;
+;; subtype Rainbow is Color range Red .. Blue;  --  the Color Red, not the Light ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 (defun emit-ada (&key code (str nil) (clear-env nil))
