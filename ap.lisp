@@ -210,20 +210,32 @@
 
 #|
 ;; orgtbl-mode
-| s-expression                   | Ada             | priority |
-|--------------------------------+-----------------+----------|
-| (. a b c)                      | a.b.c           |        0 |
-| (aref a 4 3)                   | a(4,3)          |        0 |
-| (.aref a (4 3) (6))            | a(4,3)(6)       |        4 |
-| (aref a (range 0 3))           | a(0 .. 3)       |        0 |
-| (attrib a Digits)              | a'Digits        |        0 |
-| (attrib a (aref Digits 3) Mod) | a'Digits(3)'Mod |        0 |
-| (string bla)                   | "bla"           |        0 |
-| (char c)                       | 'c'             |        0 |
-| (hex #x12345FFF)               | 16#1234_5FFF#   |        1 |
-| (bit #b11100000)               | 2#1110_0000#    |        1 |
+| s-expression                   | Ada                      | priority |
+|--------------------------------+--------------------------+----------|
+| (. a b c)                      | a.b.c                    |        0 |
+| (aref a 4 3)                   | a(4,3)                   |        0 |
+| (.aref a (4 3) (6))            | a(4,3)(6)                |        4 |
+| (aref a (range 0 3))           | a(0 .. 3)                |        0 |
+| (attrib a Digits)              | a'Digits                 |        0 |
+| (attrib a (aref Digits 3) Mod) | a'Digits(3)'Mod          |        0 |
+| (string bla)                   | "bla"                    |        0 |
+| (char c)                       | 'c'                      |        0 |
+| (hex #x12345FFF)               | 16#1234_5FFF#            |        1 |
+| (bit #b11100000)               | 2#1110_0000#             |        1 |
+| (with-use Types)               | with Types; use Types;   |        0 |
+| (with lib1 lib2)               | use lib1, lib2;          |        0 |
+| (with Common_Units)            | with Common_Units;       |         0 |
+| (use PkA PkB)                  | use PkA, PkB;            |        0  |
+| (use-all-type TpA Tf)          | use all type TpA, Tf;    |        1  |
+| (use-type TpA Tf)              | use type TpA, Tf;        |        1  |
+| (private-with lib1 lib2)       | private with lib1, lib2; |        1  |
+| (limited-with .. )             |                          |        1  |
+| (limited-private-with ..)      |                          |         1 |
+|                                |                          |          |
+|                                |                          |          |
 
-|#
+|#                             
+  
 #+nil
 (emit-ada :code `(with-compilation-unit
 		     (with Ada)))
