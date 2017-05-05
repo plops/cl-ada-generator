@@ -209,6 +209,29 @@
       ""))
 
 
+;; (. a b c)                       a.b.c
+;; (aref a 4 3)                    a(4,3)
+;; ;;(.aref a (4 3) (6))           a(4,3)(6)
+;; (aref a (range 0 3))            a(0 .. 3)
+;; (attrib a Digits)               a'Digits
+;; (attrib a (aref Digits 3) Mod)  a'Digits(3)'Mod
+;;
+;;
+;;
+;;
+;;
+;;
+;;
+;;
+;;
+;;
+;;
+;;
+;;
+;;
+;;
+;;
+
 #+nil
 (emit-ada :code `(with-compilation-unit
 		     (with Ada)))
