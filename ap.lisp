@@ -81,8 +81,11 @@
   (if code
       (if (listp code)
 	  (case (car code)
-	    (with (format str "with ~s;" (cadr code)))
-	    (use (format str "use ~s;" (cadr code)))
+	    (with (format str "with ~{~s~^,~};" (cdr code)))
+	    (use (format str "use ~{~s~^,~};" (cdr code)))
+	    (with-use (format str "with ~{~s~^,~}; use ~{~s~^,~};"
+			      (cdr code)
+			      (cdr code)))
 	    (block (with-output-to-string (s)
 		     (format s "begin~%")
 		     (loop for e in (cdr code) do
@@ -128,6 +131,21 @@
 			 (format str "procedure ~a ~a is~%~a~%~a"
 				 name
 				 (format nil "(~{~a~^;~})" (emit-ada :code `(:params ,params)))
+				 (if (listp (cdr decl))
+				     (emit-ada :code
+					       `(statements ,@(loop for e in decl collect e)))
+				     (emit-ada :code `(statements ,decl)))
+				 (emit-ada :code `(block ,@body)))))
+	    (function (destructuring-bind ((name params ret &optional decl) &rest body) (cdr code)
+			 #+nil (push (list :name name
+					   :params params
+					   :ret ret
+					   :body body)
+				     *env-functions*)
+			 (format str "procedure ~a ~a return ~a is~%~a~%~a"
+				 name
+				 (format nil "(~{~a~^;~})" (emit-ada :code `(:params ,params)))
+				 (emit-ada :code ret)
 				 (if (listp (cdr decl))
 				     (emit-ada :code
 					       `(statements ,@(loop for e in decl collect e)))
@@ -210,35 +228,40 @@
 
 #|
 ;; orgtbl-mode
-| s-expression                   | Ada                      | priority |
-|--------------------------------+--------------------------+----------|
-| (. a b c)                      | a.b.c                    |        0 |
-| (aref a 4 3)                   | a(4,3)                   |        0 |
-| (.aref a (4 3) (6))            | a(4,3)(6)                |        4 |
-| (aref a (range 0 3))           | a(0 .. 3)                |        0 |
-| (attrib a Digits)              | a'Digits                 |        0 |
-| (attrib a (aref Digits 3) Mod) | a'Digits(3)'Mod          |        0 |
-| (string bla)                   | "bla"                    |        0 |
-| (char c)                       | 'c'                      |        0 |
-| (hex #x12345FFF)               | 16#1234_5FFF#            |        1 |
-| (bit #b11100000)               | 2#1110_0000#             |        1 |
-| (with-use Types)               | with Types; use Types;   |        0 |
-| (with lib1 lib2)               | use lib1, lib2;          |        0 |
-| (with Common_Units)            | with Common_Units;       |         0 |
-| (use PkA PkB)                  | use PkA, PkB;            |        0  |
-| (use-all-type TpA Tf)          | use all type TpA, Tf;    |        1  |
-| (use-type TpA Tf)              | use type TpA, Tf;        |        1  |
-| (private-with lib1 lib2)       | private with lib1, lib2; |        1  |
-| (limited-with .. )             |                          |        1  |
-| (limited-private-with ..)      |                          |         1 |
-|                                |                          |          |
-|                                |                          |          |
+| s-expression                                                           | Ada                      | priority |
+|------------------------------------------------------------------------+--------------------------+----------|
+| (. a b c)                                                              | a.b.c                    |        0 |
+| (aref a 4 3)                                                           | a(4,3)                   |        0 |
+| (.aref a (4 3) (6))                                                    | a(4,3)(6)                |        4 |
+| (aref a (range 0 3))                                                   | a(0 .. 3)                |        0 |
+| (attrib a Digits)                                                      | a'Digits                 |        0 |
+| (attrib a (aref Digits 3) Mod)                                         | a'Digits(3)'Mod          |        0 |
+| (string bla)                                                           | "bla"                    |        0 |
+| (char c)                                                               | 'c'                      |        0 |
+| (hex #x12345FFF)                                                       | 16#1234_5FFF#            |        1 |
+| (bit #b11100000)                                                       | 2#1110_0000#             |        1 |
+| (with-use Types)                                                       | with Types; use Types;   |        0 |
+| (with lib1 lib2)                                                       | use lib1, lib2;          |        0 |
+| (with Common_Units)                                                    | with Common_Units;       |        0 |
+| (use PkA PkB)                                                          | use PkA, PkB;            |        0 |
+| (use-all-type TpA Tf)                                                  | use all type TpA, Tf;    |        2 |
+| (use-type TpA Tf)                                                      | use type TpA, Tf;        |        2 |
+| (private-with lib1 lib2)                                               | private with lib1, lib2; |        2 |
+| (limited-with .. )                                                     |                          |        2 |
+| (limited-private-with ..)                                              |                          |        2 |
+| (procedure (My_Proc ((Q Integer)) ((decl ((A Integer)) (procedure ..)) |                          |        0 |
+| (procedure (<name> [params] [decl:procedure]) <body>)                  |                          |        0 |
+| (function (<name> [params] <return> [decl:procedure]) <body)           |                          |        0 |
+|                                                                        |                          |          |
 
 |#                             
   
 #+nil
 (emit-ada :code `(with-compilation-unit
 		     (with Ada)))
+#+nil
+(emit-ada :code `(with-compilation-unit
+		     (with-use Ada Beba)))
 #+nil
 (emit-ada :code `(with-compilation-unit
 		     (with Ada.Text_IO) (use Ada.Text_IO)
@@ -264,6 +287,18 @@
 				    (setf B (- B A))
 				    ))))
 
+#+nil
+(emit-ada :code `(with-compilation-unit
+		     (function (Average ((Q Integer)
+					 (L Alpha :o))
+					Integer
+					((decl ((A Integer 3)
+						(B Integer)))))
+				(if (< A Q)
+				    (setf A (* A B))
+				    (setf B (- B A))
+				    ))))
+
 (progn
   (with-open-file (s "o.adb" :direction :output :if-exists :supersede)
    (emit-ada :str s :code `(with-compilation-unit ;; procedure in second level
@@ -282,3 +317,5 @@
 					      (setf B (- B A 2))
 					      )))))
   (sb-ext:run-program "/home/martin/big/ada/bin/gnat" (list "pretty" "-rf" "-P/home/martin/stage/cl-ada-generator/default.gpr" "/home/martin/stage/cl-ada-generator/o.adb")))
+
+
