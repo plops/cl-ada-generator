@@ -119,6 +119,30 @@
 					       `(statements ,@(loop for e in decl collect e)))
 				     (emit-ada :code `(statements ,decl)))
 				 (emit-ada :code `(block ,@body)))))
+	    (array
+	     ;; | (array (0 1) Real)                                                       | array (0 .. 1) of Real                                     |        A  |
+	     ;; | (array ((+ Start 1) (- Max 1)) Real)                                     | array (Start+1 .. Max-1 ) of Real                          |        B  |
+	     ;; | (array ((1 80) (1 100)) Boolean)                                         | array (1 .. 80, 1 .. 100) of Boolean                       |        C  |
+	     ;; | (array Error_Code    "constant String")                                  | array (Error_Code) of constant String                      |        D  |
+	     ;; | (array (Integer :range (range)) Real)                                    | array (Integer range <>) of Real                           |        E  |
+	     ;; | (array ((Integer :range (range)) (Color :range (range Red Green))) Real) | array (Integer range <>, Color range Red .. Green) of Real |        F  |
+	     (destructuring-bind (size type) (cdr code)
+	       (format str "array ~a of ~a"
+		       (cond ((atomp size) ;; D
+			      (emit-ada :code size))
+			     ((listp size) ;; A B C E F
+			      (cond
+				((eq :range (second size)) ;; E
+				 (destructuring-bind (type range-kw range) size
+				   (format nil "(~a range ~a)" (emit-add :code type) (emit-add :code range))))
+				((and (listp (first size)) ;; B C F
+				      (eq :range (second (first size)))) ;; F
+				 (if (eq :rang))
+				 )
+				))
+			     (t "unhandled condition in array"))
+		       (emit-ada :code type)))
+	     )
 	    (range
 	     (if (cdr code)
 		 (destructuring-bind (start end) (cdr code)
@@ -149,8 +173,8 @@
 	     (cond ((member (second code) '(|:=| ))
 		    ;; add semicolon to expressions
 		    (format str "~a;" (emit-ada :code (cdr code))))
-		   ((member (second code) '(if setf decl procedure))
-		    ;; if for, .. don't need semicolon
+		   ((member (second code) '(if setf decl procedure function))
+		    ;; procedure .. don't need semicolon
 		    (emit-ada :code (cdr code)))
 		   (t (format nil "not processable statement: ~a" code))))
 	 
@@ -199,44 +223,46 @@
 		   ))))
       ""))
 
+(eq :range (second '(Integer :range (range))))
+
 #|
 ;; orgtbl-mode
-| s-expression                                                             | Ada                                                        | priority |
-|--------------------------------------------------------------------------+------------------------------------------------------------+----------|
-| (. a b c)                                                                | a.b.c                                                      |        0 |
-| (aref a 4 3)                                                             | a(4,3)                                                     |        0 |
-| (.aref a (4 3) (6))                                                      | a(4,3)(6)                                                  |        4 |
-| (range 0 3)                                                              | 0 .. 3                                                     |        0 |
-| (range 0 (+ A 3))                                                        | 0 .. A+3                                                   |        0 |
-| (range)                                                                  | <>                                                         |        0 |
-| (aref a (range 0 3))                                                     | a(0 .. 3)                                                  |        0 |
-| (attrib a Digits)                                                        | a'Digits                                                   |        0 |
-| (attrib a (aref Digits 3) Mod)                                           | a'Digits(3)'Mod                                            |        0 |
-| (string bla)                                                             | "bla"                                                      |        0 |
-| (char c)                                                                 | 'c'                                                        |        0 |
-| (hex #x12345FFF)                                                         | 16#1234_5FFF#                                              |        1 |
-| (bit #b11100000)                                                         | 2#1110_0000#                                               |        1 |
-| (with-use Types)                                                         | with Types; use Types;                                     |        0 |
-| (with lib1 lib2)                                                         | use lib1, lib2;                                            |        0 |
-| (with Common_Units)                                                      | with Common_Units;                                         |        0 |
-| (use PkA PkB)                                                            | use PkA, PkB;                                              |        0 |
-| (use-all-type TpA Tf)                                                    | use all type TpA, Tf;                                      |        2 |
-| (use-type TpA Tf)                                                        | use type TpA, Tf;                                          |        2 |
-| (private-with lib1 lib2)                                                 | private with lib1, lib2;                                   |        2 |
-| (limited-with .. )                                                       |                                                            |        2 |
-| (limited-private-with ..)                                                |                                                            |        2 |
-| (procedure (My_Proc ((Q Integer)) ((decl ((A Integer)) (procedure ..))   |                                                            |        0 |
-| (procedure (<name> [params] [decl:procedure]) <body>)                    |                                                            |        0 |
-| (function (<name> [params] <return> [decl:procedure]) <body)             |                                                            |        0 |
-| (if <cond> <yes> [<no>])                                                 |                                                            |        0 |
-| (array (0 1) Real)                                                       | array (0 .. 1) of Real                                     |          |
-| (array ((1 80) (1 100)) Boolean)                                         | array (1 .. 80, 1 .. 100) of Boolean                       |          |
-| (array Error_Code    "constant String")                                  | array (Error_Code) of constant String                      |          |
-| (array Error_Code    constant-String)                                    | array (Error_Code) of constant String                      |          |
-| (array (Integer :range (range)) Real)                                    | array (Integer range <>) of Real                           |          |
-| (array ((Integer :range (range)) (Color :range (range Red Green))) Real) | array (Integer range <>, Color range Red .. Green) of Real |          |
-| (=> (range 1 120) (char *))                                              | 1 .. 120 => '*'                                            |          |
-|                                                                          |                                                            |          |
+| s-expression                                                           | Ada                                                        | priority |
+|------------------------------------------------------------------------+------------------------------------------------------------+----------|
+| (. a b c)                                                              | a.b.c                                                      |        0 |
+| (aref a 4 3)                                                           | a(4,3)                                                     |        0 |
+| (.aref a (4 3) (6))                                                    | a(4,3)(6)                                                  |        4 |
+| (range 0 3)                                                            | 0 .. 3                                                     |        0 |
+| (range 0 (+ A 3))                                                      | 0 .. A+3                                                   |        0 |
+| (range)                                                                | <>                                                         |        0 |
+| (aref a (range 0 3))                                                   | a(0 .. 3)                                                  |        0 |
+| (attrib a Digits)                                                      | a'Digits                                                   |        0 |
+| (attrib a (aref Digits 3) Mod)                                         | a'Digits(3)'Mod                                            |        0 |
+| (string bla)                                                           | "bla"                                                      |        0 |
+| (char c)                                                               | 'c'                                                        |        0 |
+| (hex #x12345FFF)                                                       | 16#1234_5FFF#                                              |        1 |
+| (bit #b11100000)                                                       | 2#1110_0000#                                               |        1 |
+| (with-use Types)                                                       | with Types; use Types;                                     |        0 |
+| (with lib1 lib2)                                                       | use lib1, lib2;                                            |        0 |
+| (with Common_Units)                                                    | with Common_Units;                                         |        0 |
+| (use PkA PkB)                                                          | use PkA, PkB;                                              |        0 |
+| (use-all-type TpA Tf)                                                  | use all type TpA, Tf;                                      |        2 |
+| (use-type TpA Tf)                                                      | use type TpA, Tf;                                          |        2 |
+| (private-with lib1 lib2)                                               | private with lib1, lib2;                                   |        2 |
+| (limited-with .. )                                                     |                                                            |        2 |
+| (limited-private-with ..)                                              |                                                            |        2 |
+| (procedure (My_Proc ((Q Integer)) ((decl ((A Integer)) (procedure ..)) |                                                            |        0 |
+| (procedure (<name> [params] [decl:procedure]) <body>)                  |                                                            |        0 |
+| (function (<name> [params] <return> [decl:procedure]) <body)           |                                                            |        0 |
+| (if <cond> <yes> [<no>])                                               |                                                            |        0 |
+| (array (range 0 1) Real)                                               | array (0 .. 1) of Real                                     |          |
+| (array ((range 1 80) (range 1 100)) Boolean)                           | array (1 .. 80, 1 .. 100) of Boolean                       |          |
+| (array Error_Code "constant String")                                   | array (Error_Code) of constant String                      |          |
+| (array Error_Code constant-String)                                     | array (Error_Code) of constant String                      |          |
+| (array (range) Real Integer)                                           | array (Integer range <>) of Real                           |          |
+| (array ((range) (range Red Green)) Real (Integer Color))               | array (Integer range <>, Color range Red .. Green) of Real |          |
+| (=> (range 1 120) (char *))                                            | 1 .. 120 => '*'                                            |          |
+|                                                                        |                                                            |          |
 
 
 |#                             
