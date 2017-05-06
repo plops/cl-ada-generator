@@ -120,26 +120,35 @@
 				     (emit-ada :code `(statements ,decl)))
 				 (emit-ada :code `(block ,@body)))))
 	    (array
-	     ;; | (array (0 1) Real)                                                       | array (0 .. 1) of Real                                     |        A  |
-	     ;; | (array ((+ Start 1) (- Max 1)) Real)                                     | array (Start+1 .. Max-1 ) of Real                          |        B  |
-	     ;; | (array ((1 80) (1 100)) Boolean)                                         | array (1 .. 80, 1 .. 100) of Boolean                       |        C  |
-	     ;; | (array Error_Code    "constant String")                                  | array (Error_Code) of constant String                      |        D  |
-	     ;; | (array (Integer :range (range)) Real)                                    | array (Integer range <>) of Real                           |        E  |
-	     ;; | (array ((Integer :range (range)) (Color :range (range Red Green))) Real) | array (Integer range <>, Color range Red .. Green) of Real |        F  |
-	     (destructuring-bind (size type) (cdr code)
+	     ;; | (array Error_Code "constant String")                                   | array (Error_Code) of constant String                      |     A     |
+	     ;; | (array (range 0 1) Real)                                               | array (0 .. 1) of Real                                     |     B     |
+	     ;; | (array (range (+ Start 1) (- Max 1)) Real)                             | array (Start+1 .. Max-1 ) of Real                          |     C     |
+	     ;; | (array (range) Real Integer)                                           | array (Integer range <>) of Real                           |     D     |
+	     ;; | (array ((range 1 80) (range 1 100)) Boolean)                           | array (1 .. 80, 1 .. 100) of Boolean                       |     E     |
+	     ;; | (array ((range) (range Red Green)) Real (Integer Color))               | array (Integer range <>, Color range Red .. Green) of Real |     F     |
+	     ;; | (array ((range 2 3) (range Red Green)) Real (nil Color))               | array (2 .. 3, Color range Red .. Green) of Real           |     G     |
+
+	     (destructuring-bind (size type &optional index-type) (cdr code)
 	       (format str "array ~a of ~a"
-		       (cond ((atomp size) ;; D
-			      (emit-ada :code size))
-			     ((listp size) ;; A B C E F
+		       (cond ((atom size) (emit-ada :code size)) ;; A  ( enum type )
+			     ((listp size) ;; B .. G  
 			      (cond
-				((eq :range (second size)) ;; E
-				 (destructuring-bind (type range-kw range) size
-				   (format nil "(~a range ~a)" (emit-add :code type) (emit-add :code range))))
-				((and (listp (first size)) ;; B C F
-				      (eq :range (second (first size)))) ;; F
-				 (if (eq :rang))
-				 )
-				))
+				((eq 'range (car size)) ;; B C D   ( 1d array )
+				 (if index-type
+				     (format nil "( ~a range ~a )" (emit-ada :code index-type) (emit-ada :code size)) ;; D
+				     (format nil "( ~a )" (emit-ada :code size)) ;; B C
+				     ))
+				(t ;; E F G
+				 (format nil "( ~{~a~^,~} )"
+					 (if index-type
+					     (loop for e in size and f in index-type
+						   collect
+						   (if f
+						       (format nil "~a range ~a" (emit-ada :code f) (emit-ada :code e)) ;; F
+						       (format nil "~a"  (emit-ada :code e)) ;; first dimension in G
+						       ))
+					     (loop for e in size collect (emit-ada :code e)) ;; E
+					     )))))
 			     (t "unhandled condition in array"))
 		       (emit-ada :code type)))
 	     )
@@ -257,10 +266,12 @@
 | (if <cond> <yes> [<no>])                                               |                                                            |        0 |
 | (array (range 0 1) Real)                                               | array (0 .. 1) of Real                                     |          |
 | (array ((range 1 80) (range 1 100)) Boolean)                           | array (1 .. 80, 1 .. 100) of Boolean                       |          |
+| (array ((+ Start 1) (- Max 1)) Real)                                   | array (Start+1 .. Max-1 ) of Real                          |          |
 | (array Error_Code "constant String")                                   | array (Error_Code) of constant String                      |          |
 | (array Error_Code constant-String)                                     | array (Error_Code) of constant String                      |          |
 | (array (range) Real Integer)                                           | array (Integer range <>) of Real                           |          |
 | (array ((range) (range Red Green)) Real (Integer Color))               | array (Integer range <>, Color range Red .. Green) of Real |          |
+| (array ((range 2 3) (range Red Green)) Real (nil Color))               | array (2 .. 3, Color range Red .. Green) of Real           |          |
 | (=> (range 1 120) (char *))                                            | 1 .. 120 => '*'                                            |          |
 |                                                                        |                                                            |          |
 
@@ -312,8 +323,30 @@
 
 ;;type CRTP_Raw is array (1 .. CRTP_MAX_DATA_SIZE + 1) of T_Uint8
 
-(emit-ada :code `(with-compilation-unit
-		     (type CRTP_Raw (array ((1 (+ CRTP_MAX_DATA_SIZE 1))) :type T_Uint8))))
+
+
+
+
+(loop for e in '((array Error_Code "constant String")                       
+   (array (range 0 1) Real)                                   
+   (array (range (+ Start 1) (- Max 1)) Real)                 
+   (array (range) Real Integer)                               
+   (array ((range 1 80) (range 1 100)) Boolean)               
+   (array ((range) (range Red Green)) Real (Integer Color))   
+	    (array ((range 2 3) (range Red Green)) Real (nil Color))) collect
+
+	    (emit-ada :code e))
+
+#+nil
+("array Error_Code of constant String"
+ "array ( 0 .. 1 ) of Real"
+ "array ( (Start + 1) .. (Max - 1) ) of Real"
+ "array ( Integer range <> ) of Real"
+ "array ( 1 .. 80,1 .. 100 ) of Boolean"
+ "array ( Integer range <>,Color range Red .. Green ) of Real"
+ "array ( 2 .. 3,Color range Red .. Green ) of Real")
+
+
 
 (progn
   (with-open-file (s "o.adb" :direction :output :if-exists :supersede)
