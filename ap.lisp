@@ -49,9 +49,9 @@
   (if code
       (if (listp code)
 	  (case (car code)
-	    (with (format str "with ~{~s~^,~};" (cdr code)))
-	    (use (format str "use ~{~s~^,~};" (cdr code)))
-	    (with-use (format str "with ~{~s~^,~}; use ~{~s~^,~};"
+	    (with (format str "with ~{~s~^, ~};" (cdr code)))
+	    (use (format str "use ~{~s~^, ~};" (cdr code)))
+	    (with-use (format str "with ~{~s~^, ~}; use ~{~s~^, ~};"
 			      (cdr code)
 			      (cdr code)))
 	    (block (with-output-to-string (s)
@@ -98,7 +98,7 @@
 				     *env-functions*)
 			 (format str "procedure ~a ~a is~%~a~%~a"
 				 name
-				 (format nil "(~{~a~^;~})" (emit-ada :code `(:params ,params)))
+				 (format nil "(~{~a~^; ~})" (emit-ada :code `(:params ,params)))
 				 (if (listp (cdr decl))
 				     (emit-ada :code
 					       `(statements ,@(loop for e in decl collect e)))
@@ -112,7 +112,7 @@
 				     *env-functions*)
 			 (format str "procedure ~a ~a return ~a is~%~a~%~a"
 				 name
-				 (format nil "(~{~a~^;~})" (emit-ada :code `(:params ,params)))
+				 (format nil "(~{~a~^; ~})" (emit-ada :code `(:params ,params)))
 				 (emit-ada :code ret)
 				 (if (listp (cdr decl))
 				     (emit-ada :code
@@ -124,7 +124,7 @@
 	     | (array Error_Code "constant String")                   | array (Error_Code) of constant String                      | A |
 	     | (array ((dots 0 1)) Real)                              | array (0 .. 1) of Real                                     | B |
 	     | (array ((dots (+ Start 1) (- Max 1))) Real)            | array (Start+1 .. Max-1 ) of Real                          | C |
-	     | (array ((range Integer)) Real)                         | array (Integer range <>) of Real                           | D |
+	     | (array ((range :type Integer)) Real)                    | array (Integer range <>) of Real                           | D |
 	     | (array ((dots 1 80) (dots 1 100)) Boolean)             | array (1 .. 80, 1 .. 100) of Boolean                       | E |
 	     | (array ((range Integer) (range Color Red Green)) Real) | array (Integer range <>, Color range Red .. Green) of Real | F |
 	     | (array ((dots 2 3) (range Color Red Green)) Real)      | array (2 .. 3, Color range Red .. Green) of Real           | G |
@@ -134,7 +134,7 @@
 	       (format str "array ~a of ~a"
 		       (if (atom dimensions)
 			   (emit-ada :code dimensions) ;; A  ( enum type )
-			   (format nil "(~{ ~a~^,~} )" (loop for e in dimensions collect (emit-ada :code e))))
+			   (format nil "(~{ ~a~^, ~} )" (loop for e in dimensions collect (emit-ada :code e))))
 		       (emit-ada :code type))))
 	    (attrib
 	     ;; | (attrib a Digits)                                                      | a'Digits                                                   |        0 |
@@ -155,13 +155,18 @@
 		 (format str "<>")))
 	    (range
 	     #|
-	     | (range Integer 0 3) | Integer range 0 .. 3 | 0 |
+	     | (range 0 3 :type integer)   | Integer range 0 .. 3 | 0 |
+	     | (range 0 3)                 | range 0 .. 3         | 0 |
+	     | (range nil nil)             | <>                   |   |
+	     | (range nil nil :type Color) | Color range <>       |   |
 
              |#
-	     (destructuring-bind (type &optional start end) (cdr code)
-	       (format str "~a range ~a" (emit-ada :code type) (if (and start end)
-								   (emit-ada :code `(dots  ,start ,end))
-								   (emit-ada :code `(dots))))))
+	     (destructuring-bind (start end &key type) (cdr code)
+	       (format str "~arange ~a"
+		       (if type (format nil "~a " (emit-ada :code type)) "")
+		       (if (and start end)
+			   (emit-ada :code `(dots  ,start ,end))
+			   (emit-ada :code `(dots))))))
 	    (aref
 	     ;; | (aref (aref img 3) (+ 2 M)) | img(3)(2+M) | 0 |
 	     ;; | (aref a 4 3)                | a(4,3)      | 0 |
@@ -285,7 +290,7 @@
 | (array ((dots 2 3) (range Color Red Green)) Real)                      | array (2 .. 3, Color range Red .. Green) of Real           |        0 |
 | (=> (dots 1 120) (char *))                                             | 1 .. 120 => '*'                                            |        0 |
 | (type Color (comma-list White Red Yellow))                             | type Color is (White, Red, Yellow)                         |          |
-| (type Column (range 1 72))                                             |                                                            |          |
+| (type Column (range 1 72))                                             | type Column is range 1 .. 72;                              |          |
 
 |#                             
   
@@ -367,6 +372,10 @@
  "a(4,3)"
  "a(0 .. 3)"
  "a()")
+
+(loop for e in '((range 0 1)
+		 (range 3 4 :type Color)) collect
+		 (emit-ada :code e))
 
 
 (loop for e in '( (attrib a Digits)                          
