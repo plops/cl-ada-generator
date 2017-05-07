@@ -235,6 +235,16 @@
 				   (emit-ada :code `(statement |:=| ,(elt args i) ,(elt args (1+ i))))))
 		      (if (< 2 (length args))
 			  (format s "~%")))))
+	    (hex (destructuring-bind (number) (cdr code)
+		   (format str "16#~x#" number)))
+	    (char (destructuring-bind (a) (cdr code)
+		    (typecase a
+		      (standard-char (format str "'~a'" a))
+		      (number (format str "'~a'" (code-char a)))
+		      (string (format str "'~a'" (elt a 0))))))
+	    (string (destructuring-bind (string) (cdr code)
+		      ;; FIXME replace " with "" in string
+		      (format str "\"~a\"" string)))
 	    (raw (destructuring-bind (string) (cdr code)
 		   (format str "~a" string)))
 	    (statement ;; add semicolon
@@ -436,14 +446,17 @@
        "a'Digits((1 + M))'Length")
      
 
-(loop for e in '((=> ((dots 1 120) (char *)))             
+(loop for e in '((=> ((dots 1 120) (char #\*)))             
 		 (=> ((dots 1 5) (=> ((dots 1 8) 0.0))))  
 		 (=> ((dots Mon Fri) True) (t False))) collect
 		 (emit-ada :code e))
 #+nil
-("(1 .. 120 => not processable: (char *))"
+("(1 .. 120 => '*')"
  "(1 .. 5 => (1 .. 8 => (0.0e+0f)))"
  "(Mon .. Fri => True, others => False)")
+
+
+
 
 (loop for e in '( (type Color (comma-list White Red Yellow))                                       
 		 (type Column (range 1 72))                                                       
@@ -465,10 +478,11 @@
       collect
       (emit-ada :code e))
 #+nil
-("Stars : String(1 .. 120) := (1 .. 120 => not processable: (char *));
+("Stars : String(1 .. 120) := (1 .. 120 => '*');
 "
  "C : constant Matrix := (1 .. 5 => (1 .. 8 => (0.0e+0f)));
 ")
+
 
 (progn
   (with-open-file (s "o.adb" :direction :output :if-exists :supersede)
