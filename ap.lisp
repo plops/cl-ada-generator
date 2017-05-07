@@ -195,8 +195,21 @@
 	     | (comma-list White Red Yellow) | (White, Red, Yellow) | 0 |
 	     
 	     |#
-	     (format str "(~{~a~^, ~})" (loop for e in (cdr code) collect (emit-ada :code e)))
-	     )
+	     (format str "(~{~a~^, ~})" (loop for e in (cdr code) collect (emit-ada :code e))))
+	    (let
+		#|
+		| (let ((Stars :type (aref String (dots 1 120)) :init (=> ((dots 1 .. 120) (char '*')))))) | Stars : String(1 .. 120) := (1 .. 120 => '*')      | 0 |
+		| (let ((C :type "constant Matrix" :init (=> ((dots 1 5) (=> ((dots 1 8) 0.0)))))))        | C : constant Matrix := (1 .. 5 => (1 .. 8 => 0.0)) | 0 |
+		
+		|#
+		(destructuring-bind (bindings) (cdr code)
+		 (with-output-to-string (s)
+		   (loop for e in bindings do
+			(destructuring-bind (name &key type init) e
+			  (format s "~a : ~a" (emit-ada :code name) (emit-ada :code type))
+			  (if init
+			      (format s " := ~a" (emit-ada :code init)))
+			  (format s ";~%"))))))
 	    (aref
 	     ;; | (aref (aref img 3) (+ 2 M)) | img(3)(2+M) | 0 |
 	     ;; | (aref a 4 3)                | a(4,3)      | 0 |
@@ -325,8 +338,8 @@
 | (type Column (range 1 72))                                                               | type Column is range 1 .. 72;                                    |        0 |
 | (type Matrix (array ((range 1 4 :type Integer) (range 1 4 :type Integer)) Real)          | type Matrix is array(Integer range <>, Integer range <>) of Real |        0 |
 | (let ((Stars :type (aref String (dots 1 120)) :init (=> ((dots 1 .. 120) (char '*')))))) | Stars : String(1 .. 120) := (1 .. 120 => '*')                    |        0 |
-| (comma-list White Red Yellow)                                                            | (White, Red, Yellow)                                             |        0 |
 | (let ((C :type "constant Matrix" :init (=> ((dots 1 5) (=> ((dots 1 8) 0.0)))))))        | C : constant Matrix := (1 .. 5 => (1 .. 8 => 0.0))               |        0 |
+| (comma-list White Red Yellow)                                                            | (White, Red, Yellow)                                             |        0 |
 
 |#                                                                      
   
@@ -446,6 +459,16 @@
 #+nil
 ("(White, Red, Yellow)")
 
+
+(loop for e in '((let ((Stars :type (aref String (dots 1 120)) :init (=> ((dots 1 120) (char #\*))))))
+		 (let ((C :type "constant Matrix" :init (=> ((dots 1 5) (=> ((dots 1 8) 0.0))))))))
+      collect
+      (emit-ada :code e))
+#+nil
+("Stars : String(1 .. 120) := (1 .. 120 => not processable: (char *));
+"
+ "C : constant Matrix := (1 .. 5 => (1 .. 8 => (0.0e+0f)));
+")
 
 (progn
   (with-open-file (s "o.adb" :direction :output :if-exists :supersede)
