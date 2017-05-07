@@ -82,15 +82,10 @@
 		    (with-output-to-string (s)
 		      (loop for e  in bindings do
 			   (destructuring-bind (name type &optional init) e
-			     (format s "~a : ~a"
-				     (emit-ada :code name)
-				     type
-				     )
+			     (format s "~a : ~a" (emit-ada :code name) type)
 			     (when init
-			       (format s " := ~a" (emit-ada :code init))
-			       )
-			     (format s ";~%")
-			     )))))
+			       (format s " := ~a" (emit-ada :code init)))
+			     (format s ";~%"))))))
 	    (procedure (destructuring-bind ((name params &optional decl) &rest body) (cdr code)
 			 #+nil (push (list :name name
 					   :params params
@@ -211,9 +206,12 @@
 			      (format s " := ~a" (emit-ada :code init)))
 			  (format s ";~%"))))))
 	    (aref
-	     ;; | (aref (aref img 3) (+ 2 M)) | img(3)(2+M) | 0 |
-	     ;; | (aref a 4 3)                | a(4,3)      | 0 |
-	     ;; | (aref a (dots 0 3))        | a(0 .. 3)   | 0 |
+	     #|
+	      | (aref (aref img 3) (+ 2 M)) | img(3)(2+M) | 0 |
+	      | (aref a 4 3)                | a(4,3)      | 0 |
+	      | (aref a (dots 0 3))         | a(0 .. 3)   | 0 |
+
+	     |#
 	     (destructuring-bind (name &rest indices) (cdr code)
 	       (format str "~a(~{~a~^,~})" (emit-ada :code name) (loop for e in indices collect (emit-ada :code e)))))
 	    (with-compilation-unit (format str "~{~a~^~%~}"
@@ -245,10 +243,14 @@
 	    (string (destructuring-bind (string) (cdr code)
 		      ;; FIXME replace " with "" in string
 		      (format str "\"~a\"" string)))
+	    (call (destructuring-bind (name &rest rest) (cdr code)
+		      (format str "~a(~{~a~^, ~})"
+			      (emit-ada :code name)
+			      (mapcar #'(lambda (x) (emit-ada :code x)) rest))))
 	    (raw (destructuring-bind (string) (cdr code)
 		   (format str "~a" string)))
 	    (statement ;; add semicolon
-	     (cond ((member (second code) '(|:=| ))
+	     (cond ((member (second code) '(|:=| call))
 		    ;; add semicolon to expressions
 		    (format str "~a;" (emit-ada :code (cdr code))))
 		   ((member (second code) '(if setf decl procedure function))
@@ -503,4 +505,48 @@
 					      )))))
   (sb-ext:run-program "/home/martin/big/ada/bin/gnat" (list "pretty" "-rf" "-P/home/martin/stage/cl-ada-generator/default.gpr" "/home/martin/stage/cl-ada-generator/o.adb")))
 
+(defparameter *file-hashes* (make-hash-table))
+
+(defun write-source (name extension code)
+  (let* ((fn (merge-pathnames (format nil "~a.~a" name extension)
+                              (user-homedir-pathname)))
+         (code-str (emit-ada
+                    :clear-env t
+                    :code code))
+         (fn-hash (sxhash fn))
+         (code-hash (sxhash code-str)))
+    (multiple-value-bind (old-code-hash exists) (gethash fn-hash *file-hashes*)
+      (when (or (not exists) (/= code-hash old-code-hash))
+        ;; store the sxhash of the c source in the hash table
+        ;; *file-hashes* with the key formed by the sxhash of the full
+        ;; pathname
+        (setf (gethash fn-hash *file-hashes*) code-hash)
+        (with-open-file (s fn
+                           :direction :output
+                           :if-exists :supersede
+                           :if-does-not-exist :create)
+          (write-sequence code-str s))
+        ))))
+
+
+#+nil
+(let ((code `(with-compilation-unit
+	    (raw "pragma SPARK_Mode(Off);")
+	  (with-use Ada.Text_IO)
+	  (with-use Ada.Integer_Text_IO)
+	  (with-use Ada.Float_Text_IO)
+	  (procedure (Average () ((decl ((A Integer)
+					 (B Integer)
+					 (M Float)))))
+		     (call Put_Line "Enter two integers.")
+		     (call Get A)
+		     (call Get B)
+		     (call New_Line)
+		     (setf M (/ (call Float (+ A B))
+				2.0))
+		     (call Put "The Average of your two numbers")
+		     (call Put M 1 2 0)
+		     (call New_Line)))))
+  (write-source "average" "adb" code))
+;; export PATH=~/big/ada/bin/:$PATH
 
