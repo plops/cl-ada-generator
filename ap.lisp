@@ -150,13 +150,24 @@
 					     (loop for e in size collect (emit-ada :code e)) ;; E
 					     )))))
 			     (t "unhandled condition in array"))
-		       (emit-ada :code type)))
-	     )
+		       (emit-ada :code type))))
+	    (attrib
+	     ;; | (attrib a Digits)                                                      | a'Digits                                                   |        0 |
+	     ;; | (attrib a (aref Digits 3) Mod)                                         | a'Digits(3)'Mod                                            |        0 |
+	     ;; | (attrib a (aref Digits (+ 1 M)) Length)                                | a'Digits(1+M)'Length                                       |        0 |
+	     (destructuring-bind (name &rest attribute-names) (cdr code)
+	       (format str "~a~{'~a~}" (emit-ada :code name) (loop for e in attribute-names collect (emit-ada :code e)))))
 	    (range
 	     (if (cdr code)
 		 (destructuring-bind (start end) (cdr code)
 		   (format str "~a .. ~a" (emit-ada :code start) (emit-ada :code end)))
 		 (format str "<>")))
+	    (aref
+	     ;; | (aref (aref img 3) (+ 2 M)) | img(3)(2+M) | 0 |
+	     ;; | (aref a 4 3)                | a(4,3)      | 0 |
+	     ;; | (aref a (range 0 3))        | a(0 .. 3)   | 0 |
+	     (destructuring-bind (name &rest indices) (cdr code)
+	       (format str "~a(~{~a~^,~})" (emit-ada :code name) (loop for e in indices collect (emit-ada :code e)))))
 	    (with-compilation-unit (format str "~{~a~^~%~}"
 				    (loop for e in (cdr code) collect 
 					 (emit-ada :code e))))
@@ -239,14 +250,16 @@
 | s-expression                                                           | Ada                                                        | priority |
 |------------------------------------------------------------------------+------------------------------------------------------------+----------|
 | (. a b c)                                                              | a.b.c                                                      |        0 |
+| (aref (aref img 3) (+ 2 M))                                            | img(3)(2+M)                                                |        0 |
 | (aref a 4 3)                                                           | a(4,3)                                                     |        0 |
+| (aref a (range 0 3))                                                   | a(0 .. 3)                                                  |        0 |
 | (.aref a (4 3) (6))                                                    | a(4,3)(6)                                                  |        4 |
 | (range 0 3)                                                            | 0 .. 3                                                     |        0 |
 | (range 0 (+ A 3))                                                      | 0 .. A+3                                                   |        0 |
 | (range)                                                                | <>                                                         |        0 |
-| (aref a (range 0 3))                                                   | a(0 .. 3)                                                  |        0 |
 | (attrib a Digits)                                                      | a'Digits                                                   |        0 |
 | (attrib a (aref Digits 3) Mod)                                         | a'Digits(3)'Mod                                            |        0 |
+| (attrib a (aref Digits (+ 1 M)) Length)                                | a'Digits(1+M)'Length                                       |        0 |
 | (string bla)                                                           | "bla"                                                      |        0 |
 | (char c)                                                               | 'c'                                                        |        0 |
 | (hex #x12345FFF)                                                       | 16#1234_5FFF#                                              |        1 |
@@ -346,6 +359,25 @@
  "array ( Integer range <>,Color range Red .. Green ) of Real"
  "array ( 2 .. 3,Color range Red .. Green ) of Real")
 
+(loop for e in '( (aref (aref img 3) (+ 2 M))
+		 (aref a 4 3)               
+		 (aref a (range 0 3))
+		 (aref a)) collect
+		 (emit-ada :code e))
+#+nil
+("img(3)((2 + M))"
+ "a(4,3)"
+ "a(0 .. 3)"
+ "a()")
+
+
+(loop for e in '( (attrib a Digits)                          
+		 (attrib a (aref Digits 3) Mod)             
+		 (attrib a (aref Digits (+ 1 M)) Length)) collect
+		 (emit-ada :code e))
+#+nil ("a'Digits"
+       "a'Digits(3)'Mod"
+       "a'Digits((1 + M))'Length")
 
 
 (progn
