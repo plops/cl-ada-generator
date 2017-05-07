@@ -131,10 +131,10 @@
 
 |#
 	     (destructuring-bind (dimensions type) (cdr code)
-	       (format str "array (~{~a~^,~}) of ~a"
+	       (format str "array ~a of ~a"
 		       (if (atom dimensions)
-			   (list (emit-ada :code dimensions)) ;; A  ( enum type )
-			   (loop for e in dimensions collect (emit-ada :code e)))
+			   (emit-ada :code dimensions) ;; A  ( enum type )
+			   (format nil "(~{ ~a~^,~} )" (loop for e in dimensions collect (emit-ada :code e))))
 		       (emit-ada :code type))))
 	    (attrib
 	     ;; | (attrib a Digits)                                                      | a'Digits                                                   |        0 |
@@ -209,11 +209,11 @@
 		      ;; handle binary operators
 		      ;; no semicolon
 		      (with-output-to-string (s)
-			(format s "(")
+			;(format s "(")
 			(loop for e in (cdr code)
 			   and i below (1- (length (cdr code))) do
 			     (format s "~a ~a " (emit-ada :code e) (car code)))
-			(format s "~a)" (emit-ada :code (car (last (cdr code)))))))
+			(format s "~a" (emit-ada :code (car (last (cdr code)))))))
 		  
 		     ((member (car code) '(|:=|))
 		      ;; handle assignment, i.e. :=
