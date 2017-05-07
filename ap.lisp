@@ -121,12 +121,12 @@
 				 (emit-ada :code `(block ,@body)))))
 	    (array
 	     ;; | (array Error_Code "constant String")                                   | array (Error_Code) of constant String                      |     A     |
-	     ;; | (array (range 0 1) Real)                                               | array (0 .. 1) of Real                                     |     B     |
-	     ;; | (array (range (+ Start 1) (- Max 1)) Real)                             | array (Start+1 .. Max-1 ) of Real                          |     C     |
+	     ;; | (array (dots 0 1) Real)                                               | array (0 .. 1) of Real                                     |     B     |
+	     ;; | (array (dots (+ Start 1) (- Max 1)) Real)                             | array (Start+1 .. Max-1 ) of Real                          |     C     |
 	     ;; | (array (range) Real Integer)                                           | array (Integer range <>) of Real                           |     D     |
-	     ;; | (array ((range 1 80) (range 1 100)) Boolean)                           | array (1 .. 80, 1 .. 100) of Boolean                       |     E     |
+	     ;; | (array ((dots 1 80) (dots 1 100)) Boolean)                           | array (1 .. 80, 1 .. 100) of Boolean                       |     E     |
 	     ;; | (array ((range) (range Red Green)) Real (Integer Color))               | array (Integer range <>, Color range Red .. Green) of Real |     F     |
-	     ;; | (array ((range 2 3) (range Red Green)) Real (nil Color))               | array (2 .. 3, Color range Red .. Green) of Real           |     G     |
+	     ;; | (array ((dots 2 3) (range Red Green)) Real (nil Color))               | array (2 .. 3, Color range Red .. Green) of Real           |     G     |
 
 	     (destructuring-bind (size type &optional index-type) (cdr code)
 	       (format str "array ~a of ~a"
@@ -157,15 +157,20 @@
 	     ;; | (attrib a (aref Digits (+ 1 M)) Length)                                | a'Digits(1+M)'Length                                       |        0 |
 	     (destructuring-bind (name &rest attribute-names) (cdr code)
 	       (format str "~a~{'~a~}" (emit-ada :code name) (loop for e in attribute-names collect (emit-ada :code e)))))
-	    (range
+	    (dots
 	     (if (cdr code)
 		 (destructuring-bind (start end) (cdr code)
 		   (format str "~a .. ~a" (emit-ada :code start) (emit-ada :code end)))
 		 (format str "<>")))
+	    (range
+	     (if (cdr code)
+	      (destructuring-bind (start end) (cdr code)
+		(format str "range ~a" (emit-ada :code `(dots  ,start ,end))))
+	      (format str "range <>")))
 	    (aref
 	     ;; | (aref (aref img 3) (+ 2 M)) | img(3)(2+M) | 0 |
 	     ;; | (aref a 4 3)                | a(4,3)      | 0 |
-	     ;; | (aref a (range 0 3))        | a(0 .. 3)   | 0 |
+	     ;; | (aref a (dots 0 3))        | a(0 .. 3)   | 0 |
 	     (destructuring-bind (name &rest indices) (cdr code)
 	       (format str "~a(~{~a~^,~})" (emit-ada :code name) (loop for e in indices collect (emit-ada :code e)))))
 	    (with-compilation-unit (format str "~{~a~^~%~}"
@@ -254,9 +259,10 @@
 | (aref a 4 3)                                                           | a(4,3)                                                     |        0 |
 | (aref a (range 0 3))                                                   | a(0 .. 3)                                                  |        0 |
 | (.aref a (4 3) (6))                                                    | a(4,3)(6)                                                  |        4 |
-| (range 0 3)                                                            | 0 .. 3                                                     |        0 |
-| (range 0 (+ A 3))                                                      | 0 .. A+3                                                   |        0 |
-| (range)                                                                | <>                                                         |        0 |
+| (dots 0 3)                                                             | 0 .. 3                                                     |        0 |
+| (dots 0 (+ A 3))                                                       | 0 .. A+3                                                   |        0 |
+| (dots)                                                                 | <>                                                         |        0 |
+| (range 0 3)                                                            | range 0 .. 3                                               |        0 |
 | (attrib a Digits)                                                      | a'Digits                                                   |        0 |
 | (attrib a (aref Digits 3) Mod)                                         | a'Digits(3)'Mod                                            |        0 |
 | (attrib a (aref Digits (+ 1 M)) Length)                                | a'Digits(1+M)'Length                                       |        0 |
@@ -277,17 +283,17 @@
 | (procedure (<name> [params] [decl:procedure]) <body>)                  |                                                            |        0 |
 | (function (<name> [params] <return> [decl:procedure]) <body)           |                                                            |        0 |
 | (if <cond> <yes> [<no>])                                               |                                                            |        0 |
-| (array (range 0 1) Real)                                               | array (0 .. 1) of Real                                     |          |
-| (array ((range 1 80) (range 1 100)) Boolean)                           | array (1 .. 80, 1 .. 100) of Boolean                       |          |
-| (array ((+ Start 1) (- Max 1)) Real)                                   | array (Start+1 .. Max-1 ) of Real                          |          |
-| (array Error_Code "constant String")                                   | array (Error_Code) of constant String                      |          |
-| (array Error_Code constant-String)                                     | array (Error_Code) of constant String                      |          |
-| (array (range) Real Integer)                                           | array (Integer range <>) of Real                           |          |
-| (array ((range) (range Red Green)) Real (Integer Color))               | array (Integer range <>, Color range Red .. Green) of Real |          |
-| (array ((range 2 3) (range Red Green)) Real (nil Color))               | array (2 .. 3, Color range Red .. Green) of Real           |          |
-| (=> (range 1 120) (char *))                                            | 1 .. 120 => '*'                                            |          |
-|                                                                        |                                                            |          |
-
+| (array (dots 0 1) Real)                                                | array (0 .. 1) of Real                                     |        0 |
+| (array ((dots 1 80) (dots 1 100)) Boolean)                             | array (1 .. 80, 1 .. 100) of Boolean                       |        0 |
+| (array (dots (+ Start 1) (- Max 1)) Real)                               | array (Start+1 .. Max-1 ) of Real                          |        0 |
+| (array Error_Code "constant String")                                   | array (Error_Code) of constant String                      |        0 |
+| (array Error_Code constant-String)                                     | array (Error_Code) of constant String                      |        0 |
+| (array (range) Real Integer)                                           | array (Integer range <>) of Real                           |        0 |
+| (array ((range) (range Red Green)) Real (Integer Color))               | array (Integer range <>, Color range Red .. Green) of Real |        0 |
+| (array ((dots 2 3) (range Red Green)) Real (nil Color))                | array (2 .. 3, Color range Red .. Green) of Real           |        0 |
+| (=> (dots 1 120) (char *))                                             | 1 .. 120 => '*'                                            |        0 |
+| (type Color (comma-list White Red Yellow))                             | type Color is (White, Red, Yellow)                         |          |
+| (type Column (range 1 72))                                             |                                                            |          |
 
 |#                             
   
@@ -341,12 +347,12 @@
 
 
 (loop for e in '((array Error_Code "constant String")                       
-   (array (range 0 1) Real)                                   
-   (array (range (+ Start 1) (- Max 1)) Real)                 
-   (array (range) Real Integer)                               
-   (array ((range 1 80) (range 1 100)) Boolean)               
-   (array ((range) (range Red Green)) Real (Integer Color))   
-	    (array ((range 2 3) (range Red Green)) Real (nil Color))) collect
+		 (array (dots 0 1) Real)                                   
+		 (array (dots (+ Start 1) (- Max 1)) Real)                 
+		 (array (range) Real Integer)                               
+		 (array ((dots 1 80) (dots 1 100)) Boolean)               
+		 (array ((range) (range Red Green)) Real (Integer Color))   
+		 (array ((dots 2 3) (range Red Green)) Real (nil Color))) collect
 
 	    (emit-ada :code e))
 
