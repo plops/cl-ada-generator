@@ -169,13 +169,18 @@
 			   (emit-ada :code `(dots))))))
 	    (=>
 	     #|
-               | (=> (dots 1 120) (char *))     | 1 .. 120 => '*'           | 0 |
-               | (=> (dots 1 5) (dots 1 8) 0.0) | 1 .. 5 => (1 .. 8 => 0.0) | 0 |
+               | (=> ((dots 1 120) (char *)))            | 1 .. 120 => '*'                     | 0 |
+               | (=> ((dots 1 5) (=> ((dots 1 8) 0.0)))) | 1 .. 5 => (1 .. 8 => 0.0)           | 0 |
+               | (=> ((dots Mon Fri) True) (t False))    | Mon .. Fri => True, others => False | 0 |
 	     
-	     => <arg-1> <arg-2> .. <arp-n> <value>
+	     => (choice-1 stmt-1) (choice-2 stmt-2) 
              |#
-	     (destructuring-bind ())
-	     )
+	     (destructuring-bind (&rest clauses) (cdr code)
+	       (format str "(~{~a~^, ~})" (loop for (choice stmt) in clauses
+					      collect
+					      (format nil "~a => ~a" (if (eq t choice)
+									 "others"
+									 (emit-ada :code choice)) (emit-ada :code stmt))))))
 	    (aref
 	     ;; | (aref (aref img 3) (+ 2 M)) | img(3)(2+M) | 0 |
 	     ;; | (aref a 4 3)                | a(4,3)      | 0 |
@@ -261,49 +266,50 @@
 
 #|
 ;; orgtbl-mode
-| s-expression                                                                           | Ada                                                              | priority |
-|----------------------------------------------------------------------------------------+------------------------------------------------------------------+----------|
-| (. a b c)                                                                              | a.b.c                                                            |        0 |
-| (aref (aref img 3) (+ 2 M))                                                            | img(3)(2+M)                                                      |        0 |
-| (aref a 4 3)                                                                           | a(4,3)                                                           |        0 |
-| (aref a (range 0 3))                                                                   | a(0 .. 3)                                                        |        0 |
-| (.aref a (4 3) (6))                                                                    | a(4,3)(6)                                                        |        4 |
-| (range Integer 0 3)                                                                    | Integer range 0 .. 3                                             |        0 |
-| (attrib a Digits)                                                                      | a'Digits                                                         |        0 |
-| (attrib a (aref Digits 3) Mod)                                                         | a'Digits(3)'Mod                                                  |        0 |
-| (attrib a (aref Digits (+ 1 M)) Length)                                                | a'Digits(1+M)'Length                                             |        0 |
-| (string bla)                                                                           | "bla"                                                            |        0 |
-| (char c)                                                                               | 'c'                                                              |        0 |
-| (hex #x12345FFF)                                                                       | 16#1234_5FFF#                                                    |        1 |
-| (bit #b11100000)                                                                       | 2#1110_0000#                                                     |        1 |
-| (with-use Types)                                                                       | with Types; use Types;                                           |        0 |
-| (with lib1 lib2)                                                                       | use lib1, lib2;                                                  |        0 |
-| (with Common_Units)                                                                    | with Common_Units;                                               |        0 |
-| (use PkA PkB)                                                                          | use PkA, PkB;                                                    |        0 |
-| (use-all-type TpA Tf)                                                                  | use all type TpA, Tf;                                            |        2 |
-| (use-type TpA Tf)                                                                      | use type TpA, Tf;                                                |        2 |
-| (private-with lib1 lib2)                                                               | private with lib1, lib2;                                         |        2 |
-| (limited-with .. )                                                                     |                                                                  |        2 |
-| (limited-private-with ..)                                                              |                                                                  |        2 |
-| (procedure (My_Proc ((Q Integer)) ((decl ((A Integer)) (procedure ..))                 |                                                                  |        0 |
-| (procedure (<name> [params] [decl:procedure]) <body>)                                  |                                                                  |        0 |
-| (function (<name> [params] <return> [decl:procedure]) <body)                           |                                                                  |        0 |
-| (if <cond> <yes> [<no>])                                                               |                                                                  |        0 |
-| (array (dots 0 1) Real)                                                                | array (0 .. 1) of Real                                           |        0 |
-| (array ((dots 1 80) (dots 1 100)) Boolean)                                             | array (1 .. 80, 1 .. 100) of Boolean                             |        0 |
-| (array (dots (+ Start 1) (- Max 1)) Real)                                              | array (Start+1 .. Max-1 ) of Real                                |        0 |
-| (array Error_Code "constant String")                                                   | array (Error_Code) of constant String                            |        0 |
-| (array Error_Code constant-String)                                                     | array (Error_Code) of constant String                            |        0 |
-| (array (range Integer) Real)                                                           | array (Integer range <>) of Real                                 |        0 |
-| (array ((range Integer) (range Color Red Green)) Real)                                 | array (Integer range <>, Color range Red .. Green) of Real       |        0 |
-| (array ((dots 2 3) (range Color Red Green)) Real)                                      | array (2 .. 3, Color range Red .. Green) of Real                 |        0 |
-| (=> (dots 1 120) (char *))                                                             | 1 .. 120 => '*'                                                  |        0 |
-| (=> (dots 1 5) (dots 1 8) 0.0)                                                         | (1 .. 5 => (1 .. 8 => 0.0))                                      |        0 |
-| (type Color (comma-list White Red Yellow))                                             | type Color is (White, Red, Yellow)                               |        0 |
-| (type Column (range 1 72))                                                             | type Column is range 1 .. 72;                                    |        0 |
-| (type Matrix (array ((range 1 4 :type Integer) (range 1 4 :type Integer)) Real)        | type Matrix is array(Integer range <>, Integer range <>) of Real |        0 |
-| (let ((Stars :type (aref String (dots 1 120)) :init (=> (dots 1 .. 120) (char '*'))))) | Stars : String(1 .. 120) := (1 .. 120 => '*')                    |        0 |
-| (let ((C :type "constant Matrix" :init (=> (dots 1 5) (dots 1 8) 0.0))))               | C : constant Matrix := (1 .. 5 => (1 .. 8 => 0.0))               |        0 |
+| s-expression                                                                             | Ada                                                              | priority |
+|------------------------------------------------------------------------------------------+------------------------------------------------------------------+----------|
+| (. a b c)                                                                                | a.b.c                                                            |        0 |
+| (aref (aref img 3) (+ 2 M))                                                              | img(3)(2+M)                                                      |        0 |
+| (aref a 4 3)                                                                             | a(4,3)                                                           |        0 |
+| (aref a (range 0 3))                                                                     | a(0 .. 3)                                                        |        0 |
+| (.aref a (4 3) (6))                                                                      | a(4,3)(6)                                                        |        4 |
+| (range Integer 0 3)                                                                      | Integer range 0 .. 3                                             |        0 |
+| (attrib a Digits)                                                                        | a'Digits                                                         |        0 |
+| (attrib a (aref Digits 3) Mod)                                                           | a'Digits(3)'Mod                                                  |        0 |
+| (attrib a (aref Digits (+ 1 M)) Length)                                                  | a'Digits(1+M)'Length                                             |        0 |
+| (string bla)                                                                             | "bla"                                                            |        0 |
+| (char c)                                                                                 | 'c'                                                              |        0 |
+| (hex #x12345FFF)                                                                         | 16#1234_5FFF#                                                    |        1 |
+| (bit #b11100000)                                                                         | 2#1110_0000#                                                     |        1 |
+| (with-use Types)                                                                         | with Types; use Types;                                           |        0 |
+| (with lib1 lib2)                                                                         | use lib1, lib2;                                                  |        0 |
+| (with Common_Units)                                                                      | with Common_Units;                                               |        0 |
+| (use PkA PkB)                                                                            | use PkA, PkB;                                                    |        0 |
+| (use-all-type TpA Tf)                                                                    | use all type TpA, Tf;                                            |        2 |
+| (use-type TpA Tf)                                                                        | use type TpA, Tf;                                                |        2 |
+| (private-with lib1 lib2)                                                                 | private with lib1, lib2;                                         |        2 |
+| (limited-with .. )                                                                       |                                                                  |        2 |
+| (limited-private-with ..)                                                                |                                                                  |        2 |
+| (procedure (My_Proc ((Q Integer)) ((decl ((A Integer)) (procedure ..))                   |                                                                  |        0 |
+| (procedure (<name> [params] [decl:procedure]) <body>)                                    |                                                                  |        0 |
+| (function (<name> [params] <return> [decl:procedure]) <body)                             |                                                                  |        0 |
+| (if <cond> <yes> [<no>])                                                                 |                                                                  |        0 |
+| (array (dots 0 1) Real)                                                                  | array (0 .. 1) of Real                                           |        0 |
+| (array ((dots 1 80) (dots 1 100)) Boolean)                                               | array (1 .. 80, 1 .. 100) of Boolean                             |        0 |
+| (array (dots (+ Start 1) (- Max 1)) Real)                                                | array (Start+1 .. Max-1 ) of Real                                |        0 |
+| (array Error_Code "constant String")                                                     | array (Error_Code) of constant String                            |        0 |
+| (array Error_Code constant-String)                                                       | array (Error_Code) of constant String                            |        0 |
+| (array (range Integer) Real)                                                             | array (Integer range <>) of Real                                 |        0 |
+| (array ((range Integer) (range Color Red Green)) Real)                                   | array (Integer range <>, Color range Red .. Green) of Real       |        0 |
+| (array ((dots 2 3) (range Color Red Green)) Real)                                        | array (2 .. 3, Color range Red .. Green) of Real                 |        0 |
+| (=> ((dots 1 120) (char *)))                                                             | 1 .. 120 => '*'                                                  |        0 |
+| (=> ((dots 1 5) (=> ((dots 1 8) 0.0))))                                                  | 1 .. 5 => (1 .. 8 => 0.0)                                        |        0 |
+| (=> ((dots Mon Fri) True) (t False))                                                     | Mon .. Fri => True, others => False                              |        0 |
+| (type Color (comma-list White Red Yellow))                                               | type Color is (White, Red, Yellow)                               |        0 |
+| (type Column (range 1 72))                                                               | type Column is range 1 .. 72;                                    |        0 |
+| (type Matrix (array ((range 1 4 :type Integer) (range 1 4 :type Integer)) Real)          | type Matrix is array(Integer range <>, Integer range <>) of Real |        0 |
+| (let ((Stars :type (aref String (dots 1 120)) :init (=> ((dots 1 .. 120) (char '*')))))) | Stars : String(1 .. 120) := (1 .. 120 => '*')                    |        0 |
+| (let ((C :type "constant Matrix" :init (=> ((dots 1 5) (=> ((dots 1 8) 0.0)))))))        | C : constant Matrix := (1 .. 5 => (1 .. 8 => 0.0))               |        0 |
 
 |#                                                                      
   
@@ -398,7 +404,16 @@
 #+nil ("a'Digits"
        "a'Digits(3)'Mod"
        "a'Digits((1 + M))'Length")
+     
 
+(loop for e in '((=> ((dots 1 120) (char *)))             
+		 (=> ((dots 1 5) (=> ((dots 1 8) 0.0))))  
+		 (=> ((dots Mon Fri) True) (t False))) collect
+		 (emit-ada :code e))
+#+nil
+("(1 .. 120 => not processable: (char *))"
+ "(1 .. 5 => (1 .. 8 => (0.0e+0f)))"
+ "(Mon .. Fri => True, others => False)")
 
 (progn
   (with-open-file (s "o.adb" :direction :output :if-exists :supersede)
