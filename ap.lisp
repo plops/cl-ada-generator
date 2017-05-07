@@ -181,6 +181,22 @@
 					      (format nil "~a => ~a" (if (eq t choice)
 									 "others"
 									 (emit-ada :code choice)) (emit-ada :code stmt))))))
+	    (type
+	     #|
+              | (type Color (comma-list White Red Yellow))                                      | type Color is (White, Red, Yellow)                               | 0 |
+              | (type Column (range 1 72))                                                      | type Column is range 1 .. 72;                                    | 0 |
+              | (type Matrix (array ((range 1 4 :type Integer) (range 1 4 :type Integer)) Real) | type Matrix is array(Integer range <>, Integer range <>) of Real | 0 |
+
+	     |#
+	     (destructuring-bind (name definition) (cdr code)
+	       (format str "type ~a is ~a" (emit-ada :code name) (emit-ada :code definition))))
+	    (comma-list
+	     #|
+	     | (comma-list White Red Yellow) | (White, Red, Yellow) | 0 |
+	     
+	     |#
+	     (format str "(~{~a~^, ~})" (loop for e in (cdr code) collect (emit-ada :code e)))
+	     )
 	    (aref
 	     ;; | (aref (aref img 3) (+ 2 M)) | img(3)(2+M) | 0 |
 	     ;; | (aref a 4 3)                | a(4,3)      | 0 |
@@ -309,6 +325,7 @@
 | (type Column (range 1 72))                                                               | type Column is range 1 .. 72;                                    |        0 |
 | (type Matrix (array ((range 1 4 :type Integer) (range 1 4 :type Integer)) Real)          | type Matrix is array(Integer range <>, Integer range <>) of Real |        0 |
 | (let ((Stars :type (aref String (dots 1 120)) :init (=> ((dots 1 .. 120) (char '*')))))) | Stars : String(1 .. 120) := (1 .. 120 => '*')                    |        0 |
+| (comma-list White Red Yellow)                                                            | (White, Red, Yellow)                                             |        0 |
 | (let ((C :type "constant Matrix" :init (=> ((dots 1 5) (=> ((dots 1 8) 0.0)))))))        | C : constant Matrix := (1 .. 5 => (1 .. 8 => 0.0))               |        0 |
 
 |#                                                                      
@@ -414,6 +431,21 @@
 ("(1 .. 120 => not processable: (char *))"
  "(1 .. 5 => (1 .. 8 => (0.0e+0f)))"
  "(Mon .. Fri => True, others => False)")
+
+(loop for e in '( (type Color (comma-list White Red Yellow))                                       
+		 (type Column (range 1 72))                                                       
+		 (type Matrix (array ((range 1 4 :type Integer) (range 1 4 :type Integer)) Real))) collect
+		 (emit-ada :code e))
+#+nil
+("type Color is (White, Red, Yellow)" "type Column is range 1 .. 72"
+ "type Matrix is array ( Integer range 1 .. 4,  Integer range 1 .. 4 ) of Real")
+
+(loop for e in '( (comma-list White Red Yellow)                                       
+		 ) collect
+		 (emit-ada :code e))
+#+nil
+("(White, Red, Yellow)")
+
 
 (progn
   (with-open-file (s "o.adb" :direction :output :if-exists :supersede)
