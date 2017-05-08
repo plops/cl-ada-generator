@@ -57,11 +57,11 @@
 	    (block (with-output-to-string (s)
 		     (format s "begin~%")
 		     (loop for e in (cdr code) do
-			  (format s "  ~a~%"  (emit-ada :code (append '(statement) e))))
+		       (format s "  ~a~%"  (emit-ada :code `(statement ,@e))))
 		     (format s "end;~%")))
 	    (statements (with-output-to-string (s)
 			  (loop for e in (cdr code) do
-			       (format s "  ~a~%"  (emit-ada :code (append '(statement) e))))))
+			    (format s "  ~a~%"  (emit-ada :code `(statement ,@e))))))
 	    (defmacro (destructuring-bind ((name params) &rest macro-body) (cdr code)
 			(push (list :name name
 				    :params params
@@ -239,7 +239,7 @@
                   (t               null)
 		|#
 		(destructuring-bind (select &rest alternatives) (cdr code)
-		  (format str "case ~a is~%~{  ~a;~%~}end case;"
+		  (format str "case ~a is~%~{~&  ~a~}end case;"
 			  (emit-ada :code select)
 			  (loop for e in alternatives
 				collect
@@ -247,7 +247,7 @@
 				  (format nil "when ~a => ~a" (if (eq t choice)
 								  "others"
 								  (emit-ada :code choice))
-					  (emit-ada :code `(statements ,statements))))))))
+					  (emit-ada :code `(statements ,@statements))))))))
 	    
 	    (setf (destructuring-bind (&rest args) (cdr code)
 		    (with-output-to-string (s)
@@ -277,10 +277,10 @@
 	     (cond ((member (second code) '(|:=| call))
 		    ;; add semicolon to expressions
 		    (format str "~a;" (emit-ada :code (cdr code))))
-		   ((member (second code) '(if setf decl procedure function))
+		   ((member (second code) '(if setf decl procedure function statement statements))
 		    ;; procedure .. don't need semicolon
 		    (emit-ada :code (cdr code)))
-		   (t (format nil "not processable statement: ~a" code))))
+		   (t (format nil "not processable statement: ~a, second code = ~a" code (second code)))))
 	 
 	    (t (cond ((and (= 2 (length code)) (member (car code)  '(- ~ !)))
 		      ;; handle unary operators, i.e. - ~ !, this code
@@ -510,15 +510,24 @@
 ")
 
 (loop for e in '((call Get A)
+		 (call Print A Q B)
 		 (call Stop))
       collect
       (emit-ada :code e))
 
 (loop for e in '((case Sensor
-		   ((range Tue Thu) (call Generate_Report))
-		   (t               "null")))
+		   ((dots Tue Thu) (call Generate_Report) (call Get))
+		   (t               (string "null"))))
       collect
       (emit-ada :code e))
+
+#+nil
+("case Sensor is
+  when Tue .. Thu =>   Generate_Report;
+  Get;
+  when others =>   not processable statement: (statement string null), second code = string
+end case;")
+
 
 
 (progn
