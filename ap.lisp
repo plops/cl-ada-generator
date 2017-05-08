@@ -248,8 +248,8 @@
 								  "others"
 								  (emit-ada :code choice))
 					  (emit-ada :code `(statements ,@statements))))))))
-	    (loop
-		  #|
+
+	    	  #|
 		  <loop-id> <scheme> loop <seq-of-statements> end loop <loop-id>;
 		  <scheme> ::= while <condition> | for <for-spec> | for <iter-spec>
 		  <for-spec> ::= <id> in [reverse] <discrete-subtype>
@@ -262,7 +262,7 @@
 		     (call Bid price)
 		     (incf N 1))
 
-                  (loop-for (j (attrib Buffer Range))
+	          (loop-for (j (attrib Buffer Range))
 		    (if (/= (aref Buffer j) Space)
 		        (call Put (aref Buffer j))))
 
@@ -272,7 +272,10 @@
 		  * (loop-for-reverse (i (dots 0 10))
     		    (call Print i))
 	       |#
-	       )
+	
+	    (loop-for (destructuring-bind ((id range) &rest body) (cdr code)
+			(format str "for ~a in ~a loop~%~aend loop;" (emit-ada :code id)
+				(emit-ada :code range) (emit-ada :code `(statements ,@body)))))
 	    (setf (destructuring-bind (&rest args) (cdr code)
 		    (with-output-to-string (s)
 		      ;; handle multiple assignments
@@ -330,7 +333,7 @@
 				(emit-ada :code lvalue)
 				op
 				(emit-ada :code rvalue))))
-		     ((member (car code)  '(and or xor not))
+		     ((member (car code)  '(and or xor not /=))
 		      ;; handle logical operators, i.e. and
 		      (destructuring-bind (op left right) code
 			(format str "(~a ~a ~a)"
@@ -553,6 +556,22 @@
 end case;")
 
 
+(loop for e in '((loop-for (j (attrib Buffer Range))
+		    (if (/= (aref Buffer j) Space)
+		        (call Put (aref Buffer j))))
+
+		  (loop-for (i (dots 0 10))
+		    (call Print i)))
+      collect
+      (emit-ada :code e))
+#+nil
+("for j in Buffer'Range loop
+  if ( (Buffer(j) /= Space) ) then   Put(Buffer(j));
+end if;
+end loop;"
+ "for i in 0 .. 10 loop
+  Print(i);
+end loop;")
 
 (progn
   (with-open-file (s "o.adb" :direction :output :if-exists :supersede)
