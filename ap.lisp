@@ -54,7 +54,7 @@
 	    (with-use (format str "with ~{~s~^, ~}; use ~{~s~^, ~};"
 			      (cdr code)
 			      (cdr code)))
-	    (block (with-output-to-string (s)
+	    (block (with-output-to-string (s) ;; FIXME include declarative part
 		     (format s "begin~%")
 		     (loop for e in (cdr code) do
 		       (format s "  ~a~%"  (emit-ada :code `(statement ,@e))))
@@ -580,6 +580,10 @@ end if;
 end loop;"
  "for i in 0 .. 10 loop
   Print(i);
+end loop;"
+ "while price < threshold loop
+  Bid(price);
+  N := N + 1;
 end loop;")
 
 (progn
