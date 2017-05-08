@@ -258,7 +258,7 @@
 		    (call Get Current_Character)
 		    (exit-when (= Current_Character (char #\*))))
 
-		  (loop-while (< price threshold)
+          	    (loop-while (< price threshold)
 		     (call Bid price)
 		     (incf N 1))
 
@@ -276,6 +276,10 @@
 	    (loop-for (destructuring-bind ((id range) &rest body) (cdr code)
 			(format str "for ~a in ~a loop~%~aend loop;" (emit-ada :code id)
 				(emit-ada :code range) (emit-ada :code `(statements ,@body)))))
+
+	    (loop-while (destructuring-bind (condition &rest body) (cdr code)
+			(format str "while ~a loop~%~aend loop;" (emit-ada :code condition)
+				(emit-ada :code `(statements ,@body)))))
 	    (setf (destructuring-bind (&rest args) (cdr code)
 		    (with-output-to-string (s)
 		      ;; handle multiple assignments
@@ -284,6 +288,8 @@
 				   (emit-ada :code `(statement |:=| ,(elt args i) ,(elt args (1+ i))))))
 		      (if (< 2 (length args))
 			  (format s "~%")))))
+	    (incf (destructuring-bind (var &optional (increment 1)) (cdr code)
+		    (emit-ada :code `(setf ,var (+ ,var ,increment)))))
 	    (hex (destructuring-bind (number) (cdr code)
 		   (format str "16#~x#" number)))
 	    (char (destructuring-bind (a) (cdr code)
@@ -304,7 +310,7 @@
 	     (cond ((member (second code) '(|:=| call))
 		    ;; add semicolon to expressions
 		    (format str "~a;" (emit-ada :code (cdr code))))
-		   ((member (second code) '(if setf decl procedure function statement statements))
+		   ((member (second code) '(if setf decl procedure function statement statements incf))
 		    ;; procedure .. don't need semicolon
 		    (emit-ada :code (cdr code)))
 		   (t (format nil "not processable statement: ~a, second code = ~a" code (second code)))))
@@ -561,7 +567,10 @@ end case;")
 		        (call Put (aref Buffer j))))
 
 		  (loop-for (i (dots 0 10))
-		    (call Print i)))
+		   (call Print i))
+		 (loop-while (< price threshold)
+		     (call Bid price)
+		     (incf N 1)))
       collect
       (emit-ada :code e))
 #+nil
