@@ -225,6 +225,30 @@
 		    (when false-statement
 		      (format s "else ~a" (emit-ada :code `(statements ,false-statement))))
 		    (format s "end if;"))))
+	    (case
+		#|
+		case <selecting_expression> is 
+		  <alternative>
+		  {<alternative>}
+                end case;
+
+		altenative ::= when <discrete_choice_list> => <sequence_of_statements>
+
+		(case Sensor
+		  ((range Tue Thu) (call Generate_Report))
+                  (t               null)
+		|#
+		(destructuring-bind (select &rest alternatives) (cdr code)
+		  (format str "case ~a is~%~{  ~a;~%~}end case;"
+			  (emit-ada :code select)
+			  (loop for e in alternatives
+				collect
+				(destructuring-bind (choice &rest statements) e
+				  (format nil "when ~a => ~a" (if (eq t choice)
+								  "others"
+								  (emit-ada :code choice))
+					  (emit-ada :code `(statements ,statements))))))))
+	    
 	    (setf (destructuring-bind (&rest args) (cdr code)
 		    (with-output-to-string (s)
 		      ;; handle multiple assignments
@@ -244,9 +268,9 @@
 		      ;; FIXME replace " with "" in string
 		      (format str "\"~a\"" string)))
 	    (call (destructuring-bind (name &rest rest) (cdr code)
-		      (format str "~a(~{~a~^, ~})"
-			      (emit-ada :code name)
-			      (mapcar #'(lambda (x) (emit-ada :code x)) rest))))
+		    (with-output-to-string (s)
+		      (format s "~a" (emit-ada :code name))
+		      (when rest (format s "(~{~a~^, ~})" (mapcar #'(lambda (x) (emit-ada :code x)) rest))))))
 	    (raw (destructuring-bind (string) (cdr code)
 		   (format str "~a" string)))
 	    (statement ;; add semicolon
@@ -484,6 +508,17 @@
 "
  "C : constant Matrix := (1 .. 5 => (1 .. 8 => (0.0e+0f)));
 ")
+
+(loop for e in '((call Get A)
+		 (call Stop))
+      collect
+      (emit-ada :code e))
+
+(loop for e in '((case Sensor
+		   ((range Tue Thu) (call Generate_Report))
+		   (t               "null")))
+      collect
+      (emit-ada :code e))
 
 
 (progn
