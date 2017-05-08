@@ -248,7 +248,31 @@
 								  "others"
 								  (emit-ada :code choice))
 					  (emit-ada :code `(statements ,@statements))))))))
-	    
+	    (loop
+		  #|
+		  <loop-id> <scheme> loop <seq-of-statements> end loop <loop-id>;
+		  <scheme> ::= while <condition> | for <for-spec> | for <iter-spec>
+		  <for-spec> ::= <id> in [reverse] <discrete-subtype>
+
+		  * (loop
+		    (call Get Current_Character)
+		    (exit-when (= Current_Character (char #\*))))
+
+		  (loop-while (< price threshold)
+		     (call Bid price)
+		     (incf N 1))
+
+                  (loop-for (j (attrib Buffer Range))
+		    (if (/= (aref Buffer j) Space)
+		        (call Put (aref Buffer j))))
+
+		  (loop-for (i (dots 0 10))
+		    (call Print i))
+		  
+		  * (loop-for-reverse (i (dots 0 10))
+    		    (call Print i))
+	       |#
+	       )
 	    (setf (destructuring-bind (&rest args) (cdr code)
 		    (with-output-to-string (s)
 		      ;; handle multiple assignments
