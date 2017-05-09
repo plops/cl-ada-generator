@@ -172,6 +172,13 @@
 					      (format nil "~@[~a ~]=> ~a" (if (eq t choice)
 									 "others"
 									 (emit-ada :code choice)) (emit-ada :code stmt))))))
+
+	    (package
+	     (destructuring-bind (name &rest body) (cdr code)
+	       (format str "package ~a is~{~&  ~a~}~&end ~a;" (emit-ada :code name) (mapcar #'(lambda (x) (emit-ada :code x)) body) (emit-ada :code name))))
+	    (subtype
+	     (destructuring-bind (name definition) (cdr code)
+	       (format str "subtype ~a is ~a" (emit-ada :code name) (emit-ada :code definition))))
 	    (type
 	     #|
               | (type Color (comma-list White Red Yellow))                                      | type Color is (White, Red, Yellow)                               | 0 |
