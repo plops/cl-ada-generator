@@ -207,6 +207,12 @@
 				 (format nil "~a : ~a ~@[ := ~a~]" (emit-ada :code name) (emit-ada :code type)
 					 (when init (emit-ada :code init)))))
 			  (emit-ada :code `(block ,@body)))))
+	    (record (destructuring-bind (bindings) (cdr code)
+		      (format str "record~{~&  ~a~}~&end record;"
+			      (loop for e in bindings collect
+			       (destructuring-bind (name &key type init) e
+				 (format nil "~a : ~a ~@[ := ~a~]" (emit-ada :code name) (emit-ada :code type)
+					 (when init (emit-ada :code init))))))))
 	    (aref
 	     #|
 	      | (aref (aref img 3) (+ 2 M)) | img(3)(2+M) | 0 |
@@ -317,7 +323,7 @@
 	     (cond ((member (second code) '(|:=| call))
 		    ;; add semicolon to expressions
 		    (format str "~a;" (emit-ada :code (cdr code))))
-		   ((member (second code) '(if setf decl with procedure function statement statements incf exit-when raw and-then))
+		   ((member (second code) '(if setf decl with procedure subtype type function record statement statements incf exit-when raw and-then))
 		    ;; procedure .. don't need semicolon
 		    (emit-ada :code (cdr code)))
 		   (t (format nil "not processable statement: ~a, second code = ~a" code (second code)))))
