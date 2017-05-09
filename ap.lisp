@@ -420,6 +420,8 @@
 | (char "x")
 | (char 12)
 | (raw "pragma;")
+| (and-then a b c)
+| (with (=> (Pre bla) (Post bla2)))
 
 |#                                                                      
   
