@@ -107,10 +107,8 @@
 				 name
 				 (format nil "(~{~a~^; ~})" (emit-ada :code `(:params ,params)))
 				 (emit-ada :code ret)
-				 (if (listp (cdr decl))
-				     (emit-ada :code
-					       `(statements ,@(loop for e in decl collect e)))
-				     (emit-ada :code `(statements ,decl)))
+				 (emit-ada :code
+					   `(statements ,@(loop for e in decl collect e)))
 				 (emit-ada :code `(block ,@body)))))
 	    (array
 	     #|
@@ -616,14 +614,6 @@ begin
   C(3) := 2;
 end;
 ")
-
-(emit-ada :code `(=> (Pre (not (call Full Queue)))))
-
-(emit-ada :code `(with (=> (Pre (not (call Full Queue)))
-			   (Post (and-then (not (call Empty Queue))
-					   (= (call Size Queue)
-					      (call Size (+ (attrib Queue Old) 1)))
-					   (= (call Last_Element Queue) Item))))))
 
 (emit-ada :code `(procedure (Enqueue ((Queue Queue_Type :io)
 				      (Item Element_Type :i))
