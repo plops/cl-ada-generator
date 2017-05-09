@@ -49,9 +49,9 @@
   (if code
       (if (listp code)
 	  (case (car code)
-	    (with (format str "with ~{~s~^, ~};" (cdr code)))
-	    (use (format str "use ~{~s~^, ~};" (cdr code)))
-	    (with-use (format str "with ~{~s~^, ~}; use ~{~s~^, ~};"
+	    (with (format str "with ~{~a~^, ~};" (mapcar #'(lambda (x) (emit-ada :code x)) (cdr code))))
+	    (use (format str "use ~{~a~^, ~};" (cdr code)))
+	    (with-use (format str "with ~{~a~^, ~}; use ~{~a~^, ~};"
 			      (cdr code)
 			      (cdr code)))
 	    (block (with-output-to-string (s) ;; FIXME include declarative part
@@ -94,10 +94,8 @@
 			 (format str "procedure ~a ~a is~%~a~%~a"
 				 name
 				 (format nil "(~{~a~^; ~})" (emit-ada :code `(:params ,params)))
-				 (if (listp (cdr decl))
-				     (emit-ada :code
-					       `(statements ,@(loop for e in decl collect e)))
-				     (emit-ada :code `(statements ,decl)))
+				 (emit-ada :code
+					   `(statements ,@(loop for e in decl collect e)))
 				 (emit-ada :code `(block ,@body)))))
 	    (function (destructuring-bind ((name params ret &optional decl) &rest body) (cdr code)
 			 #+nil (push (list :name name
@@ -173,7 +171,7 @@
 	     (destructuring-bind (&rest clauses) (cdr code)
 	       (format str "(~{~a~^, ~})" (loop for (choice stmt) in clauses
 					      collect
-					      (format nil "~a => ~a" (if (eq t choice)
+					      (format nil "~@[~a ~]=> ~a" (if (eq t choice)
 									 "others"
 									 (emit-ada :code choice)) (emit-ada :code stmt))))))
 	    (type
@@ -308,23 +306,25 @@
 		      (when rest (format s "(~{~a~^, ~})" (mapcar #'(lambda (x) (emit-ada :code x)) rest))))))
 	    (raw (destructuring-bind (string) (cdr code)
 		   (format str "~a" string)))
+	    (and-then (destructuring-bind (clause-1 &rest clauses) (cdr code)
+		       (format str "~a~{ and then ~a~}" (emit-ada :code clause-1) (mapcar #'(lambda (x) (emit-ada :code x)) clauses))))
 	    (statement ;; add semicolon
 	     (cond ((member (second code) '(|:=| call))
 		    ;; add semicolon to expressions
 		    (format str "~a;" (emit-ada :code (cdr code))))
-		   ((member (second code) '(if setf decl procedure function statement statements incf exit-when raw))
+		   ((member (second code) '(if setf decl with procedure function statement statements incf exit-when raw and-then))
 		    ;; procedure .. don't need semicolon
 		    (emit-ada :code (cdr code)))
 		   (t (format nil "not processable statement: ~a, second code = ~a" code (second code)))))
 	 
-	    (t (cond ((and (= 2 (length code)) (member (car code)  '(- ~ !)))
+	    (t (cond ((and (= 2 (length code)) (member (car code)  '(- not)))
 		      ;; handle unary operators, i.e. - ~ !, this code
 		      ;; needs to be placed before binary - operator!
 		      (destructuring-bind (op operand) code
 			(format nil "(~a (~a))"
 				op
 				(emit-ada :code operand))))
-		     ((member (car code) '(+ - * / < <=))
+		     ((member (car code) '(+ - * / < <= and or /= =))
 		      ;; handle binary operators
 		      ;; no semicolon
 		      (with-output-to-string (s)
@@ -341,7 +341,7 @@
 				(emit-ada :code lvalue)
 				op
 				(emit-ada :code rvalue))))
-		     ((member (car code)  '(and or xor not /=))
+		     ((member (car code)  '(xor))
 		      ;; handle logical operators, i.e. and
 		      (destructuring-bind (op left right) code
 			(format str "(~a ~a ~a)"
@@ -617,6 +617,33 @@ begin
 end;
 ")
 
+(emit-ada :code `(=> (Pre (not (call Full Queue)))))
+
+(emit-ada :code `(with (=> (Pre (not (call Full Queue)))
+			   (Post (and-then (not (call Empty Queue))
+					   (= (call Size Queue)
+					      (call Size (+ (attrib Queue Old) 1)))
+					   (= (call Last_Element Queue) Item))))))
+
+(emit-ada :code `(procedure (Enqueue ((Queue Queue_Type :io)
+				      (Item Element_Type :i))
+				     ((with (=> (Pre (not (call Full Queue)))
+						(Post  (and-then (not (call Empty Queue))
+								 (= (call Size Queue)
+								    (call Size (+ (attrib Queue Old) 1)))
+								 (= (call Last_Element Queue) Item)))))
+				      (decl ((A Integer)))))
+		     (call New_Line)))
+#+nil
+"procedure Enqueue (Queue : in out Queue_Type; Item : in Element_Type) is
+  with (Pre => (not (Full(Queue))), Post => (not (Empty(Queue))) and then Size(Queue) = Size(Queue'Old + 1) and then Last_Element(Queue) = Item);
+  A : Integer;
+
+
+begin
+  New_Line;
+end;
+"
 (progn
   (with-open-file (s "o.adb" :direction :output :if-exists :supersede)
    (emit-ada :str s :code `(with-compilation-unit ;; procedure in second level
