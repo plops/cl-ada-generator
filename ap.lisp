@@ -280,6 +280,9 @@
 	    (loop-while (destructuring-bind (condition &rest body) (cdr code)
 			(format str "while ~a loop~%~aend loop;" (emit-ada :code condition)
 				(emit-ada :code `(statements ,@body)))))
+	    (exit-when (destructuring-bind (&optional condition) (cdr code)
+			 (format str "exit when~a;"
+				 (if condition (format nil " ~a" (emit-ada :code condition)) ""))))
 	    (setf (destructuring-bind (&rest args) (cdr code)
 		    (with-output-to-string (s)
 		      ;; handle multiple assignments
@@ -310,7 +313,7 @@
 	     (cond ((member (second code) '(|:=| call))
 		    ;; add semicolon to expressions
 		    (format str "~a;" (emit-ada :code (cdr code))))
-		   ((member (second code) '(if setf decl procedure function statement statements incf))
+		   ((member (second code) '(if setf decl procedure function statement statements incf exit-when))
 		    ;; procedure .. don't need semicolon
 		    (emit-ada :code (cdr code)))
 		   (t (format nil "not processable statement: ~a, second code = ~a" code (second code)))))
@@ -409,7 +412,9 @@
 | (let ((Stars :type (aref String (dots 1 120)) :init (=> ((dots 1 .. 120) (char '*')))))) | Stars : String(1 .. 120) := (1 .. 120 => '*')                    |        0 |
 | (let ((C :type "constant Matrix" :init (=> ((dots 1 5) (=> ((dots 1 8) 0.0)))))))        | C : constant Matrix := (1 .. 5 => (1 .. 8 => 0.0))               |        0 |
 | (comma-list White Red Yellow)                                                            | (White, Red, Yellow)                                             |        0 |
-
+| (exit-when (= Color Red))
+| (incf N)
+| (incf N 3)
 |#                                                                      
   
 #+nil
@@ -567,10 +572,12 @@ end case;")
 		        (call Put (aref Buffer j))))
 
 		  (loop-for (i (dots 0 10))
-		   (call Print i))
+		     (call Print i)
+		     (exit-when (and i (hex 8))))
 		 (loop-while (< price threshold)
 		     (call Bid price)
-		     (incf N 1)))
+		    (incf N 1)
+		    (exit-when)))
       collect
       (emit-ada :code e))
 #+nil
@@ -580,10 +587,12 @@ end if;
 end loop;"
  "for i in 0 .. 10 loop
   Print(i);
+  exit when (i and 16#8#);
 end loop;"
  "while price < threshold loop
   Bid(price);
   N := N + 1;
+  exit when;
 end loop;")
 
 (progn
