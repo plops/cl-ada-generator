@@ -175,7 +175,7 @@
 
 	    (package
 	     (destructuring-bind (name &rest body) (cdr code)
-	       (format str "package ~a is~{~&  ~a~}~&end ~a;" (emit-ada :code name) (mapcar #'(lambda (x) (emit-ada :code x)) body) (emit-ada :code name))))
+	       (format str "package ~a is~%~a&end ~a;" (emit-ada :code name) (emit-ada :code `(statements ,body)) (emit-ada :code name))))
 	    (subtype
 	     (destructuring-bind (name definition) (cdr code)
 	       (format str "subtype ~a is ~a" (emit-ada :code name) (emit-ada :code definition))))
@@ -320,10 +320,10 @@
 	    (and-then (destructuring-bind (clause-1 &rest clauses) (cdr code)
 		       (format str "~a~{ and then ~a~}" (emit-ada :code clause-1) (mapcar #'(lambda (x) (emit-ada :code x)) clauses))))
 	    (statement ;; add semicolon
-	     (cond ((member (second code) '(|:=| call))
+	     (cond ((member (second code) '(|:=| call subtype))
 		    ;; add semicolon to expressions
 		    (format str "~a;" (emit-ada :code (cdr code))))
-		   ((member (second code) '(if setf decl with procedure subtype type function record statement statements incf exit-when raw and-then))
+		   ((member (second code) '(if setf decl with procedure type function record statement statements incf exit-when raw and-then))
 		    ;; procedure .. don't need semicolon
 		    (emit-ada :code (cdr code)))
 		   (t (format nil "not processable statement: ~a, second code = ~a" code (second code)))))
@@ -638,7 +638,22 @@ end;
 								    (call Size (+ (attrib Queue Old) 1)))
 								 (= (call Last_Element Queue) Item)))))
 				      (decl ((A Integer)))))
-		     (call New_Line)))
+			    (call New_Line)))
+
+
+(let ((code `(package Bounded_Queue_V1
+		      (subtype Element_Type Integer)
+		      (type Queue_Array (array ((range :type Positive)) Element_Type))
+		      (procedure (Enqueue ((Queue Queue_Type :io)
+					   (Item Element_Type :i))
+					  ((with (=> (Pre (not (call Full Queue)))
+						     (Post  (and-then (not (call Empty Queue))
+								      (= (call Size Queue)
+									 (call Size (+ (attrib Queue Old) 1)))
+								      (= (call Last_Element Queue) Item)))))
+					   (decl ((A Integer)))))
+				 (call New_Line)))))
+  (write-source "Bounded_Queue_V1" "ads" code))
 #+nil
 "procedure Enqueue (Queue : in out Queue_Type; Item : in Element_Type) is
   with (Pre => (not (Full(Queue))), Post => (not (Empty(Queue))) and then Size(Queue) = Size(Queue'Old + 1) and then Last_Element(Queue) = Item);
