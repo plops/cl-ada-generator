@@ -272,11 +272,11 @@
     		    (call Print i))
 	       |#
 	
-	    (loop-for (destructuring-bind ((id range) &rest body) (cdr code)
+	    (for (destructuring-bind ((id range) &rest body) (cdr code)
 			(format str "for ~a in ~a loop~%~aend loop;" (emit-ada :code id)
 				(emit-ada :code range) (emit-ada :code `(statements ,@body)))))
 
-	    (loop-while (destructuring-bind (condition &rest body) (cdr code)
+	    (while (destructuring-bind (condition &rest body) (cdr code)
 			(format str "while ~a loop~%~aend loop;" (emit-ada :code condition)
 				(emit-ada :code `(statements ,@body)))))
 	    (exit-when (destructuring-bind (&optional condition) (cdr code)
