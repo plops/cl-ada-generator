@@ -197,14 +197,13 @@
 		| (let ((C :type "constant Matrix" :init (=> ((dots 1 5) (=> ((dots 1 8) 0.0)))))))        | C : constant Matrix := (1 .. 5 => (1 .. 8 => 0.0)) | 0 |
 		
 		|#
-		(destructuring-bind (bindings) (cdr code)
-		 (with-output-to-string (s)
-		   (loop for e in bindings do
-			(destructuring-bind (name &key type init) e
-			  (format s "~a : ~a" (emit-ada :code name) (emit-ada :code type))
-			  (if init
-			      (format s " := ~a" (emit-ada :code init)))
-			  (format s ";~%"))))))
+		(destructuring-bind (bindings &rest body) (cdr code)
+		  (format str "declare~{~&  ~a;~}~&~a"
+			  (loop for e in bindings collect
+			       (destructuring-bind (name &key type init) e
+				 (format nil "~a : ~a ~@[ := ~a~]" (emit-ada :code name) (emit-ada :code type)
+					 (when init (emit-ada :code init)))))
+			  (emit-ada :code `(block ,@body)))))
 	    (aref
 	     #|
 	      | (aref (aref img 3) (+ 2 M)) | img(3)(2+M) | 0 |
@@ -313,7 +312,7 @@
 	     (cond ((member (second code) '(|:=| call))
 		    ;; add semicolon to expressions
 		    (format str "~a;" (emit-ada :code (cdr code))))
-		   ((member (second code) '(if setf decl procedure function statement statements incf exit-when))
+		   ((member (second code) '(if setf decl procedure function statement statements incf exit-when raw))
 		    ;; procedure .. don't need semicolon
 		    (emit-ada :code (cdr code)))
 		   (t (format nil "not processable statement: ~a, second code = ~a" code (second code)))))
@@ -415,6 +414,15 @@
 | (exit-when (= Color Red))
 | (incf N)
 | (incf N 3)
+| (call Get)
+| (call Put 3)
+| (string "hello")
+| (hex 32)
+| (char #\x)
+| (char "x")
+| (char 12)
+| (raw "pragma;")
+
 |#                                                                      
   
 #+nil
@@ -567,6 +575,7 @@
 end case;")
 
 
+
 (loop for e in '((loop-for (j (attrib Buffer Range))
 		    (if (/= (aref Buffer j) Space)
 		        (call Put (aref Buffer j))))
@@ -594,6 +603,19 @@ end loop;"
   N := N + 1;
   exit when;
 end loop;")
+
+
+(loop for e in '((let ((C :type "constant Matrix" :init (=> ((dots 1 5) (=> ((dots 1 8) 0.0))))))
+		   (setf (aref C 3) 2)))
+      collect
+     (emit-ada :code e))
+#+nil
+("declare
+  C : constant Matrix  := (1 .. 5 => (1 .. 8 => (0.0e+0f)));
+begin
+  C(3) := 2;
+end;
+")
 
 (progn
   (with-open-file (s "o.adb" :direction :output :if-exists :supersede)
