@@ -95,25 +95,29 @@
 					   :params params
 					   :body body)
 				     *env-functions*)
-			 (format str "procedure ~a ~a is~%~a~%~a"
+			 (format str "procedure ~a ~a~@[~a~];"
 				 name
 				 (format nil "(~{~a~^; ~})" (emit-ada :code `(:params ,params)))
-				 (emit-ada :code
-					   `(statements ,@(loop for e in decl collect e)))
-				 (emit-ada :code `(block ,@body)))))
+				 (if body
+				     (format nil " is~%~a~%~a"
+					   (emit-ada :code  `(statements ,@decl))
+					   (emit-ada :code `(block ,@body)))
+				     (emit-ada :code  `(statements ,@decl))))))
 	    (function (destructuring-bind ((name params ret &optional decl) &rest body) (cdr code)
 			 #+nil (push (list :name name
 					   :params params
 					   :ret ret
 					   :body body)
 				     *env-functions*)
-			 (format str "procedure ~a ~a return ~a is~%~a~%~a"
+			 (format str "function ~a ~a return ~a~@[~a~];"
 				 name
 				 (format nil "(~{~a~^; ~})" (emit-ada :code `(:params ,params)))
 				 (emit-ada :code ret)
-				 (emit-ada :code
-					   `(statements ,@(loop for e in decl collect e)))
-				 (emit-ada :code `(block ,@body)))))
+				 (if body
+				   (format nil " is~%~a~%~a"
+					   (emit-ada :code `(statements ,@decl))
+					   (emit-ada :code `(block ,@body)))
+				   (emit-ada :code `(statements ,@decl))))))
 	    (array
 	     #|
 	     | (array Error_Code "constant String")                   | array (Error_Code) of constant String                      | A |
@@ -212,9 +216,9 @@
 					 (when init (emit-ada :code init)))))
 			  (emit-ada :code `(block ,@body)))))
 	    (record (destructuring-bind (bindings) (cdr code)
-		      (format str "record~{~&  ~a~}~&end record;"
+		      (format str "record~{~&  ~a;~}~&end record"
 			      (loop for e in bindings collect
-			       (destructuring-bind (name &key type init) e
+			       (destructuring-bind (name type &key init) e
 				 (format nil "~a : ~a ~@[ := ~a~]" (emit-ada :code name) (emit-ada :code type)
 					 (when init (emit-ada :code init))))))))
 	    (aref
@@ -327,7 +331,7 @@
 	     (cond ((member (second code) '(|:=| call))
 		    ;; add semicolon to expressions
 		    (format str "~a;" (emit-ada :code (cdr code))))
-		   ((member (second code) '(if setf decl with procedure type subtype function record statement statements incf exit-when raw and-then))
+		   ((member (second code) '(if setf decl with procedure type record subtype function statement statements incf exit-when raw and-then))
 		    ;; procedure .. don't need semicolon
 		    (emit-ada :code (cdr code)))
 		   (t (format nil "not processable statement: ~a, second code = ~a" code (second code)))))
@@ -648,9 +652,17 @@ end;
 (let ((code `(package Bounded_Queue_V1
 		      (subtype Element_Type Integer)
 		      (type Queue_Array (array ((range nil nil :type Positive)) Element_Type))
-		      (type (discriminant Queue_Type ((a atype)))
-			   Test
-			    #+nil (record ((Count Natural))))
+		      (type (discriminant Queue_Type ((MaxSize Positive)))
+			    (record ((Count Natural)
+				     (Front Positive)
+				     (Rear Positive)
+				     (Items (aref Queue_Array (dots 1 Max_Size))))))
+		      (function (Full ((Queue Queue_Type :i)) Boolean))
+
+		      (function (Empty ((Queue Queue_Type :i)) Boolean))
+		      (function (Size ((Queue Queue_Type :i)) Natural))
+		      (function (First_Element ((Queue Queue_Type :i)) Element_Type ((with (=> (Pre (not (call Empty Queue))))))))
+
 		      (procedure (Enqueue ((Queue Queue_Type :io)
 					   (Item Element_Type :i))
 					  ((with (=> (Pre (not (call Full Queue)))
