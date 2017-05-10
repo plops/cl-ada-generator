@@ -697,7 +697,20 @@ end;
 									 (- (call Size (attrib Queue Old)) 1)))))))))))
       (code `(package-body Bounded_Queue_V1
 		      (function (Full ((Queue Queue_Type :i)) Boolean)
-				(return (= Queue.Count Queue.Max_Size)))))
+				(return (= Queue.Count Queue.Max_Size)))
+		      (function (Empty ((Queue Queue_Type :i)) Boolean)
+				(return (= Queue.Count 0)))
+		      (function (Size ((Queue Queue_Type :i)) Natural)
+				(return Queue.Count))
+		      (function (First_Element ((Queue Queue_Type :i)) Element_Type)
+				(return (aref Queue.Items Queue.Front)))
+		      (function (Last_Element ((Queue Queue_Type :i)) Element_Type)
+				(return (aref Queue.Items Queue.Rear)))
+		      (procedure (Clear ((Queue Queue_Type :io)))
+				 (setf Queue.Count 0
+				       Queue.Front 1
+				       Queue.Rear Queue.Max_Size))
+		      ))
       (call `(with-compilation-unit
 		 (with-use Bounded_Queue_V1)
 	       (with-use Ada.Text_IO)
