@@ -331,7 +331,7 @@
 	     (cond ((member (second code) '(|:=| call))
 		    ;; add semicolon to expressions
 		    (format str "~a;" (emit-ada :code (cdr code))))
-		   ((member (second code) '(if setf decl with procedure type record subtype function statement statements incf exit-when raw and-then))
+		   ((member (second code) '(if setf decl with procedure type record for while subtype function statement statements incf exit-when raw and-then))
 		    ;; procedure .. don't need semicolon
 		    (emit-ada :code (cdr code)))
 		   (t (format nil "not processable statement: ~a, second code = ~a" code (second code)))))
@@ -649,7 +649,7 @@ end;
 			    (call New_Line)))
 
 
-(let ((code `(package Bounded_Queue_V1
+(let ((def `(package Bounded_Queue_V1
 		      (subtype Element_Type Integer)
 		      (type Queue_Array (array ((range nil nil :type Positive)) Element_Type))
 		      (type (discriminant Queue_Type ((MaxSize Positive)))
@@ -679,14 +679,21 @@ end;
 					  ((with (=> (Pre (not (call Empty Queue)))
 						     (Post  (and-then (= Item (call First_Element (attrib Queue Old)))
 								      (= (call Size Queue)
-									 (- (call Size (attrib Queue Old)) 1))))))))))))
-  
-
-
-
-  
-  (write-source "Bounded_Queue_V1" "ads" code)
-    (emit-ada :code code))
+									 (- (call Size (attrib Queue Old)) 1)))))))))))
+      (code `(with-compilation-unit
+		 (with-use Bounded_Queue_V1)
+	       (with-use Ada.Text_IO)
+	       (procedure (Bounded_Queue_Example_V1 nil ((decl ((My_Queue (discriminant Bounded_Queue_V1.Queue_Type (=> (Max_Size 100))))
+								(Value Integer)))))
+			  (call Clear My_Queue)
+			  (for (Count (range 17 52 :type Integer))
+			       (call Enqueue (=> (Queue MyQueue)) (=> (Item Count))))
+			  (for (Count (range 1 5 :type Integer))
+			       (call Dequeue (=> (Queue MyQueue)) (=> (Item Value)))
+			       (call Put_Line (attrib Integer (call Image Value))))))))
+  (write-source "Bounded_Queue_V1" "ads" def)
+  (write-source "Bounded_Queue_V1" "adb" code)
+  (emit-ada :code code))
 
 #+nil
 "package Bounded_Queue_V1 is
