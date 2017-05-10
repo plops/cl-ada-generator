@@ -343,7 +343,7 @@
 			(format nil "(~a (~a))"
 				op
 				(emit-ada :code operand))))
-		     ((member (car code) '(+ - * / < <= and or /= =))
+		     ((member (car code) '(+ - * / < <= and or /= = &))
 		      ;; handle binary operators
 		      ;; no semicolon
 		      (with-output-to-string (s)
@@ -690,7 +690,11 @@ end;
 			       (call Enqueue (=> (Queue MyQueue)) (=> (Item Count))))
 			  (for (Count (range 1 5 :type Integer))
 			       (call Dequeue (=> (Queue MyQueue)) (=> (Item Value)))
-			       (call Put_Line (attrib Integer (call Image Value))))))))
+			       (call Put_Line (attrib Integer (call Image Value))))
+			  (call Clear My_Queue)
+			  (setf Value (call Size My_Queue))
+			  (call Put_Line (& (string "Size of cleared queue is ")
+					    (attrib Integer (call Image Value))))))))
   (write-source "Bounded_Queue_V1" "ads" def)
   (write-source "Bounded_Queue_V1" "adb" code)
   (emit-ada :code code))
