@@ -248,6 +248,14 @@
 		    (when false-statement
 		      (format s "else ~a" (emit-ada :code `(statements ,false-statement))))
 		    (format s "end if;"))))
+	    (when (destructuring-bind (condition true-statement) (cdr code)
+		    (format str "if ( ~a ) then~&~a~&end if;"
+			    (emit-ada :code condition)
+			    (emit-ada :code `(statements ,true-statement)))))
+	    (unless (destructuring-bind (condition false-statement) (cdr code)
+		    (format str "if ( ~a ) then~&~a~&end if;"
+			    (emit-ada :code `(not ,condition))
+			    (emit-ada :code `(statements ,false-statement)))))
 	    (case
 		#|
 		case <selecting_expression> is 
@@ -318,6 +326,8 @@
 		      (format str "return ~a" (emit-ada :code val))))
 	    (incf (destructuring-bind (var &optional (increment 1)) (cdr code)
 		    (emit-ada :code `(setf ,var (+ ,var ,increment)))))
+	    (decf (destructuring-bind (var &optional (decrement 1)) (cdr code)
+		    (emit-ada :code `(setf ,var (- ,var ,decrement)))))
 	    (hex (destructuring-bind (number) (cdr code)
 		   (format str "16#~x#" number)))
 	    (char (destructuring-bind (a) (cdr code)
@@ -712,8 +722,14 @@ end;
 				       Queue.Rear Queue.Max_Size))
 		      (procedure (Enqueue ((Queue Queue_Type :io)
 					   (Item Element_Type :i)))
-				 (setf Queue.Rear (rem Queue.Rear (+ Queue.Max_Size 1))))
-		      ))
+				 (setf Queue.Rear (rem Queue.Rear (+ Queue.Max_Size 1))
+				       (aref Queue.Items Queue.Rear) Item)
+				 (incf Queue.Count))
+		      (procedure (Dequeue ((Queue Queue_Type :io)
+					   (Item Element_Type :i)))
+				 (setf Item (aref Queue.Items Queue.Front)
+				       Queue.Front (rem Queue.Front (+ Queue.Max_Size 1)))
+				 (decf Queue.Count))))
       (call `(with-compilation-unit
 		 (with-use Bounded_Queue_V1)
 	       (with-use Ada.Text_IO)
