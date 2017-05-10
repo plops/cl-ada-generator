@@ -188,6 +188,9 @@
 	    (package
 	     (destructuring-bind (name &rest body) (cdr code)
 	       (format str "package ~a is~%~a~&end ~a;" (emit-ada :code name) (emit-ada :code `(statements ,@body)) (emit-ada :code name))))
+	    (package-body
+	     (destructuring-bind (name &rest body) (cdr code)
+	       (format str "package body ~a is~%~a~&end ~a;" (emit-ada :code name) (emit-ada :code `(statements ,@body)) (emit-ada :code name))))
 	    (subtype
 	     (destructuring-bind (name definition) (cdr code)
 	       (format str "subtype ~a is ~a;" (emit-ada :code name) (emit-ada :code definition))))
@@ -343,7 +346,7 @@
 	     (cond ((member (second code) '(|:=| call return))
 		    ;; add semicolon to expressions
 		    (format str "~a;" (emit-ada :code (cdr code))))
-		   ((member (second code) '(if setf decl with procedure type record for while subtype function statement statements incf exit-when raw and-then))
+		   ((member (second code) '(if setf decl with procedure type record for while package package-body subtype function statement statements incf exit-when raw and-then))
 		    ;; procedure .. don't need semicolon
 		    (emit-ada :code (cdr code)))
 		   (t (format nil "not processable statement: ~a, second code = ~a" code (second code)))))
@@ -692,7 +695,7 @@ end;
 						     (Post  (and-then (= Item (call First_Element (attrib Queue Old)))
 								      (= (call Size Queue)
 									 (- (call Size (attrib Queue Old)) 1)))))))))))
-      (code `(package "body Bounded_Queue_V1"
+      (code `(package-body Bounded_Queue_V1
 		      (function (Full ((Queue Queue_Type :i)) Boolean)
 				(return (= Queue.Count Queue.Max_Size)))))
       (call `(with-compilation-unit
