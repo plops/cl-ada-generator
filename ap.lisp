@@ -86,7 +86,7 @@
 			     (when init
 			       (format s " := ~a" (emit-ada :code init)))
 			     (format s ";~%"))))))
-	    (discriminant (destructuring-bind (name params ) (cdr code)
+	    (discriminant (destructuring-bind (name params) (cdr code)
 			 (format str "~a(~{~a~^; ~})"
 				 name
 				 (emit-ada :code `(:params ,params)))))
@@ -326,7 +326,13 @@
 	    (call (destructuring-bind (name &rest rest) (cdr code)
 		    (with-output-to-string (s)
 		      (format s "~a" (emit-ada :code name))
-		      (when rest (format s "(~{~a~^, ~})" (mapcar #'(lambda (x) (emit-ada :code x)) rest))))))
+		      (when rest (format s "(~{~a~^, ~})" (loop for i below (length rest) collect
+							       (let ((e (elt rest i)))
+								 (if (keywordp e)
+								     (prog1
+								       (emit-ada :code `(=> (,e ,(elt rest (+ i 1)))))
+								       (incf i))
+								     (emit-ada :code e)))))))))
 	    (raw (destructuring-bind (string) (cdr code)
 		   (format str "~a" string)))
 	    (and-then (destructuring-bind (clause-1 &rest clauses) (cdr code)
@@ -687,13 +693,13 @@ end;
       (code `(with-compilation-unit
 		 (with-use Bounded_Queue_V1)
 	       (with-use Ada.Text_IO)
-	       (procedure (Bounded_Queue_Example_V1 nil #+nil ((decl ((My_Queue (discriminant Bounded_Queue_V1.Queue_Type (=> (Max_Size 100))))
+	       (procedure (Bounded_Queue_Example_V1 nil ((decl ((My_Queue (call Bounded_Queue_V1.Queue_Type :Max_Size 100))
 								(Value Integer)))))
 			  (call Clear My_Queue)
 			  (for (Count (range 17 52 :type Integer))
 			       (call Enqueue (=> (Queue MyQueue)) (=> (Item Count))))
 			  (for (Count (range 1 5 :type Integer))
-			       (call Dequeue (=> (Queue MyQueue)) (=> (Item Value)))
+			       (call Dequeue :Queue MyQueue :Item Value)
 			       (call Put_Line (attrib Integer (call Image Value))))
 			  (call Clear My_Queue)
 			  (setf Value (call Size My_Queue))
