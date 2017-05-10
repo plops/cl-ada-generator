@@ -175,10 +175,10 @@
 
 	    (package
 	     (destructuring-bind (name &rest body) (cdr code)
-	       (format str "package ~a is~%~a&end ~a;" (emit-ada :code name) (emit-ada :code `(statements ,body)) (emit-ada :code name))))
+	       (format str "package ~a is~%~a~&end ~a;" (emit-ada :code name) (emit-ada :code `(statements ,@body)) (emit-ada :code name))))
 	    (subtype
 	     (destructuring-bind (name definition) (cdr code)
-	       (format str "subtype ~a is ~a" (emit-ada :code name) (emit-ada :code definition))))
+	       (format str "subtype ~a is ~a;" (emit-ada :code name) (emit-ada :code definition))))
 	    (type
 	     #|
               | (type Color (comma-list White Red Yellow))                                      | type Color is (White, Red, Yellow)                               | 0 |
@@ -187,7 +187,7 @@
 
 	     |#
 	     (destructuring-bind (name definition) (cdr code)
-	       (format str "type ~a is ~a" (emit-ada :code name) (emit-ada :code definition))))
+	       (format str "type ~a is ~a;" (emit-ada :code name) (emit-ada :code definition))))
 	    (comma-list
 	     #|
 	     | (comma-list White Red Yellow) | (White, Red, Yellow) | 0 |
@@ -320,10 +320,10 @@
 	    (and-then (destructuring-bind (clause-1 &rest clauses) (cdr code)
 		       (format str "~a~{ and then ~a~}" (emit-ada :code clause-1) (mapcar #'(lambda (x) (emit-ada :code x)) clauses))))
 	    (statement ;; add semicolon
-	     (cond ((member (second code) '(|:=| call subtype))
+	     (cond ((member (second code) '(|:=| call))
 		    ;; add semicolon to expressions
 		    (format str "~a;" (emit-ada :code (cdr code))))
-		   ((member (second code) '(if setf decl with procedure type function record statement statements incf exit-when raw and-then))
+		   ((member (second code) '(if setf decl with procedure type subtype function record statement statements incf exit-when raw and-then))
 		    ;; procedure .. don't need semicolon
 		    (emit-ada :code (cdr code)))
 		   (t (format nil "not processable statement: ~a, second code = ~a" code (second code)))))
@@ -643,7 +643,10 @@ end;
 
 (let ((code `(package Bounded_Queue_V1
 		      (subtype Element_Type Integer)
-		      (type Queue_Array (array ((range :type Positive)) Element_Type))
+		      (type Queue_Array (array ((range nil nil :type Positive)) Element_Type))
+		      (type (procedure Queue_Type ((a atype)) ())
+			   Test
+			    #+nil (record ((Count Natural))))
 		      (procedure (Enqueue ((Queue Queue_Type :io)
 					   (Item Element_Type :i))
 					  ((with (=> (Pre (not (call Full Queue)))
@@ -653,6 +656,8 @@ end;
 								      (= (call Last_Element Queue) Item)))))
 					   (decl ((A Integer)))))
 				 (call New_Line)))))
+  (emit-ada :code code)
+  
   (write-source "Bounded_Queue_V1" "ads" code))
 #+nil
 "procedure Enqueue (Queue : in out Queue_Type; Item : in Element_Type) is
