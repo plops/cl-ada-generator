@@ -311,6 +311,8 @@
 				   (emit-ada :code `(statement |:=| ,(elt args i) ,(elt args (1+ i))))))
 		      (if (< 2 (length args))
 			  (format s "~%")))))
+	    (return (destructuring-bind (val) (cdr code)
+		      (format str "return ~a" (emit-ada :code val))))
 	    (incf (destructuring-bind (var &optional (increment 1)) (cdr code)
 		    (emit-ada :code `(setf ,var (+ ,var ,increment)))))
 	    (hex (destructuring-bind (number) (cdr code)
@@ -338,7 +340,7 @@
 	    (and-then (destructuring-bind (clause-1 &rest clauses) (cdr code)
 		       (format str "~a~{ and then ~a~}" (emit-ada :code clause-1) (mapcar #'(lambda (x) (emit-ada :code x)) clauses))))
 	    (statement ;; add semicolon
-	     (cond ((member (second code) '(|:=| call))
+	     (cond ((member (second code) '(|:=| call return))
 		    ;; add semicolon to expressions
 		    (format str "~a;" (emit-ada :code (cdr code))))
 		   ((member (second code) '(if setf decl with procedure type record for while subtype function statement statements incf exit-when raw and-then))
@@ -690,7 +692,10 @@ end;
 						     (Post  (and-then (= Item (call First_Element (attrib Queue Old)))
 								      (= (call Size Queue)
 									 (- (call Size (attrib Queue Old)) 1)))))))))))
-      (code `(with-compilation-unit
+      (code `(package "body Bounded_Queue_V1"
+		      (function (Full ((Queue Queue_Type :i)) Boolean)
+				(return (= Queue.Count Queue.Max_Size)))))
+      (call `(with-compilation-unit
 		 (with-use Bounded_Queue_V1)
 	       (with-use Ada.Text_IO)
 	       (procedure (Bounded_Queue_Example_V1 nil ((decl ((My_Queue (call Bounded_Queue_V1.Queue_Type :Max_Size 100))
@@ -707,6 +712,7 @@ end;
 					    (attrib Integer (call Image Value))))))))
   (write-source "Bounded_Queue_V1" "ads" def)
   (write-source "Bounded_Queue_V1" "adb" code)
+  (write-source "Bounded_Queue_V1_call" "adb" call)
   (emit-ada :code code))
 
 #+nil
