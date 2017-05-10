@@ -375,7 +375,7 @@
 				(emit-ada :code lvalue)
 				op
 				(emit-ada :code rvalue))))
-		     ((member (car code)  '(xor))
+		     ((member (car code)  '(xor rem))
 		      ;; handle logical operators, i.e. and
 		      (destructuring-bind (op left right) code
 			(format str "(~a ~a ~a)"
@@ -710,6 +710,9 @@ end;
 				 (setf Queue.Count 0
 				       Queue.Front 1
 				       Queue.Rear Queue.Max_Size))
+		      (procedure (Enqueue ((Queue Queue_Type :io)
+					   (Item Element_Type :i)))
+				 (setf Queue.Rear (rem Queue.Rear (+ Queue.Max_Size 1))))
 		      ))
       (call `(with-compilation-unit
 		 (with-use Bounded_Queue_V1)
