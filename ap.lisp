@@ -86,6 +86,10 @@
 			     (when init
 			       (format s " := ~a" (emit-ada :code init)))
 			     (format s ";~%"))))))
+	    (discriminant (destructuring-bind (name params ) (cdr code)
+			 (format str "~a(~{~a~^; ~})"
+				 name
+				 (emit-ada :code `(:params ,params)))))
 	    (procedure (destructuring-bind ((name params &optional decl) &rest body) (cdr code)
 			 #+nil (push (list :name name
 					   :params params
@@ -636,7 +640,7 @@ end;
 						(Post  (and-then (not (call Empty Queue))
 								 (= (call Size Queue)
 								    (call Size (+ (attrib Queue Old) 1)))
-								 (= (call Last_Element Queue) Item)))))
+								 (= (call Last_Element Queue) Item))q)))
 				      (decl ((A Integer)))))
 			    (call New_Line)))
 
@@ -644,7 +648,7 @@ end;
 (let ((code `(package Bounded_Queue_V1
 		      (subtype Element_Type Integer)
 		      (type Queue_Array (array ((range nil nil :type Positive)) Element_Type))
-		      (type (procedure Queue_Type ((a atype)) ())
+		      (type (discriminant Queue_Type ((a atype)))
 			   Test
 			    #+nil (record ((Count Natural))))
 		      (procedure (Enqueue ((Queue Queue_Type :io)
