@@ -58,7 +58,7 @@
 		     (format s "begin~%")
 		     (loop for e in (cdr code) do
 		       (format s "  ~a~%"  (emit-ada :code `(statement ,@e))))
-		     (format s "end;~%")))
+		     (format s "end~%")))
 	    (statements (with-output-to-string (s)
 			  (loop for e in (cdr code) do
 			    (format s "  ~a~%"  (emit-ada :code `(statement ,@e))))))
@@ -363,7 +363,7 @@
 	     (cond ((member (second code) '(|:=| call return))
 		    ;; add semicolon to expressions
 		    (format str "~a;" (emit-ada :code (cdr code))))
-		   ((member (second code) '(if setf decl with procedure decf incf when unless type record for while package package-body subtype function statement statements incf exit-when raw and-then))
+		   ((member (second code) '(if setf decl with procedure block decf incf when unless type record for while package package-body subtype function statement statements incf exit-when raw and-then))
 		    ;; procedure .. don't need semicolon
 		    (emit-ada :code (cdr code)))
 		   (t (format nil "not processable statement: ~a, second code = ~a" code (second code)))))
