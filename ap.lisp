@@ -777,6 +777,7 @@ end;
 			  (setf Value (call Size My_Queue))
 			  (call Put_Line (& (string "Size of cleared queue is ")
 					    (attrib Integer (call Image Value))))))))
+  (ensure-directories-exist #P"/dev/shm/q/")
   (write-source #P"/dev/shm/q/" "bounded_queue_v1" "ads" def)
   (write-source #P"/dev/shm/q/" "bounded_queue_v1" "adb" code)
   (write-source #P"/dev/shm/q/" "bounded_queue_example_v1" "adb" call)
