@@ -779,9 +779,18 @@ end;
 					    (attrib Integer (call Image Value))))))))
   (write-source #P"/dev/shm/q/" "bounded_queue_v1" "ads" def)
   (write-source #P"/dev/shm/q/" "bounded_queue_v1" "adb" code)
-  (write-source #P"/dev/shm/q/" "bounded_queue_v1_call" "adb" call)
+  (write-source #P"/dev/shm/q/" "bounded_queue_example_v1" "adb" call)
   ;(emit-ada :code code)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; project E is					     ;;
+;; 						     ;;
+;;    for Source_Dirs use ("./**");		     ;;
+;;    for Main use ("bounded_queue_example_v1.adb"); ;;
+;; 						     ;;
+;; end E;					     ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 
