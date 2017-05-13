@@ -8,6 +8,29 @@
 
 (setf (readtable-case *readtable*) :invert)
 
+(defparameter *file-hashes* (make-hash-table))
+
+(defun write-source (folder name extension code)
+  (let* ((fn (merge-pathnames (format nil "~a.~a" name extension)
+                              folder #+nil (user-homedir-pathname)))
+         (code-str (emit-ada
+                    :clear-env t
+                    :code code))
+         (fn-hash (sxhash fn))
+         (code-hash (sxhash code-str)))
+    (multiple-value-bind (old-code-hash exists) (gethash fn-hash *file-hashes*)
+      (when (or (not exists) (/= code-hash old-code-hash))
+        ;; store the sxhash of the c source in the hash table
+        ;; *file-hashes* with the key formed by the sxhash of the full
+        ;; pathname
+        (setf (gethash fn-hash *file-hashes*) code-hash)
+        (with-open-file (s fn
+                           :direction :output
+                           :if-exists :supersede
+                           :if-does-not-exist :create)
+          (write-sequence code-str s))
+	(sb-ext:run-program "/home/martin/big/ada/bin/gnat" (list "pretty" "-rf" (format nil "-P~a/default.gpr" folder) (format nil "~a" fn)))
+        ))))
 
 (defun print-sufficient-digits-f32 (f)
   "print a single floating point number as a string with a given nr. of
@@ -104,9 +127,10 @@
 				     (format nil "(~{~a~^; ~})" (emit-ada :code `(:params ,params)))
 				     "")
 				 (if body
-				     (format nil " is~%~a~%~a"
+				     (format nil " is~%~a~%begin~%~aend ~a~%"
 					   (emit-ada :code  `(statements ,@decl))
-					   (emit-ada :code `(block ,@body)))
+					   (emit-ada :code `(statements ,@body))
+					   name)
 				     (emit-ada :code  `(statements ,@decl))))))
 	    (function (destructuring-bind ((name params ret &optional decl) &rest body) (cdr code)
 			 #+nil (push (list :name name
@@ -121,9 +145,10 @@
 				     "")
 				 (emit-ada :code ret)
 				 (if body
-				   (format nil " is~%~a~%~a"
+				   (format nil " is~%~a~%begin~%~aend ~a~%"
 					   (emit-ada :code `(statements ,@decl))
-					   (emit-ada :code `(block ,@body)))
+					   (emit-ada :code `(statements ,@body))
+					   name)
 				   (emit-ada :code `(statements ,@decl))))))
 	    (array
 	     #|
@@ -696,7 +721,7 @@ end;
 		     (function (First_Element ((Queue Queue_Type :i)) Element_Type ((with (pre (not (call Empty Queue)))))))
 		     (function (Last_Element ((Queue Queue_Type :i)) Element_Type
 					     ((with (pre (not (call Empty Queue)))))))
-		     (function (Clear ((Queue Queue_Type :i)) Element_Type
+		     (procedure (Clear ((Queue Queue_Type :io))
 				      ((with (post (and-then (call Empty Queue) (= (call Size Queue) 0)))))))
 
 		     (procedure (Enqueue ((Queue Queue_Type :io)
@@ -707,7 +732,7 @@ end;
 								    (+ (call Size (attrib Queue Old)) 1))
 								 (= (call Last_Element Queue) Item)))))))
 		     (procedure (Dequeue ((Queue Queue_Type :io)
-					  (Item Element_Type :i))
+					  (Item Element_Type :o))
 					 ((with (pre (not (call Empty Queue)))
 						(post  (and-then (= Item (call First_Element (attrib Queue Old)))
 								 (= (call Size Queue)
@@ -733,7 +758,7 @@ end;
 					    (aref Queue.Items Queue.Rear) Item)
 				      (incf Queue.Count))
 			   (procedure (Dequeue ((Queue Queue_Type :io)
-						(Item Element_Type :i)))
+						(Item Element_Type :o)))
 				      (setf Item (aref Queue.Items Queue.Front)
 					    Queue.Front (rem Queue.Front (+ Queue.Max_Size 1)))
 				      (decf Queue.Count))))
@@ -790,28 +815,6 @@ end;
 					      )))))
   (sb-ext:run-program "/home/martin/big/ada/bin/gnat" (list "pretty" "-rf" "-P/home/martin/stage/cl-ada-generator/default.gpr" "/home/martin/stage/cl-ada-generator/o.adb")))
 
-(defparameter *file-hashes* (make-hash-table))
-
-(defun write-source (folder name extension code)
-  (let* ((fn (merge-pathnames (format nil "~a.~a" name extension)
-                              folder #+nil (user-homedir-pathname)))
-         (code-str (emit-ada
-                    :clear-env t
-                    :code code))
-         (fn-hash (sxhash fn))
-         (code-hash (sxhash code-str)))
-    (multiple-value-bind (old-code-hash exists) (gethash fn-hash *file-hashes*)
-      (when (or (not exists) (/= code-hash old-code-hash))
-        ;; store the sxhash of the c source in the hash table
-        ;; *file-hashes* with the key formed by the sxhash of the full
-        ;; pathname
-        (setf (gethash fn-hash *file-hashes*) code-hash)
-        (with-open-file (s fn
-                           :direction :output
-                           :if-exists :supersede
-                           :if-does-not-exist :create)
-          (write-sequence code-str s))
-        ))))
 
 
 #+nil
