@@ -207,7 +207,7 @@
 	     => (choice-1 stmt-1) (choice-2 stmt-2) 
              |#
 	     (destructuring-bind (&rest clauses) (cdr code)
-	       (format str "(~{~a~^, ~})" (loop for (choice stmt) in clauses
+	       (format str "~{~a~^, ~}" (loop for (choice stmt) in clauses
 					      collect
 					      (format nil "~@[~a ~]=> ~a" (if (eq t choice)
 									 "others"
@@ -769,9 +769,9 @@ end;
 								(Value Integer)))))
 			  (call Clear My_Queue)
 			  (for (Count (range 17 52 :type Integer))
-			       (call Enqueue (=> (Queue MyQueue)) (=> (Item Count))))
+			       (call Enqueue :Queue My_Queue :Item Count))
 			  (for (Count (range 1 5 :type Integer))
-			       (call Dequeue :Queue MyQueue :Item Value)
+			       (call Dequeue :Queue My_Queue :Item Value)
 			       (call Put_Line (attrib Integer (call Image Value))))
 			  (call Clear My_Queue)
 			  (setf Value (call Size My_Queue))
