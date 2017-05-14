@@ -695,17 +695,9 @@ begin
 end;
 ")
 
-(emit-ada :code `(procedure (Enqueue ((Queue Queue_Type :io)
-				      (Item Element_Type :i))
-				     ((with (=> (Pre (not (call Full Queue)))
-						(Post  (and-then (not (call Empty Queue))
-								 (= (call Size Queue)
-								    (call Size (+ (attrib Queue Old) 1)))
-								 (= (call Last_Element Queue) Item))q)))
-				      (decl ((A Integer)))))
-			    (call New_Line)))
 
 
+#+nil
 (let ((def `(package Bounded_Queue_V1
 		     (subtype Element_Type Integer)
 		     (type Queue_Array (array ((range nil nil :type Positive)) Element_Type))
