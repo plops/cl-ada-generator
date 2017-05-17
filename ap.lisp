@@ -200,7 +200,7 @@
 			   (emit-ada :code `(dots  ,start ,end))
 			   (emit-ada :code `(dots))))))
 	    (digits (destructuring-bind (n) (cdr code)
-		      (format str "digits ~a" n)))
+		      (format str "digits ~a" (emit-ada :code n))))
 	    (=>
 	     #|
                | (=> ((dots 1 120) (char *)))            | 1 .. 120 => '*'                     | 0 |
