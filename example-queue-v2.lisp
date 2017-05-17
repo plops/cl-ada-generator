@@ -66,9 +66,9 @@
 					    Queue.Front (rem Queue.Front (+ Queue.Max_Size 1)))
 				      (decf Queue.Count))))
       (call `(with-compilation-unit
-		 (with-use Bounded_Queue_V1)
+		 (with-use Bounded_Queue_V2)
 	       (with-use Ada.Text_IO)
-	       (procedure (Bounded_Queue_Example_V1 nil ((decl ((My_Queue (call Bounded_Queue_V1.Queue_Type :Max_Size 100))
+	       (procedure (Bounded_Queue_Example_V2 nil ((decl ((My_Queue (call Bounded_Queue_V1.Queue_Type :Max_Size 100))
 								(Value Integer)))))
 			  (call Clear My_Queue)
 			  (for (Count (range 17 52 :type Integer))

@@ -189,7 +189,8 @@
 	     | (range 0 3 :type integer)   | Integer range 0 .. 3 | 0 |
 	     | (range 0 3)                 | range 0 .. 3         | 0 |
 	     | (range nil nil)             | <>                   |   |
-	     | (range nil nil :type Color) | Color range <>       |   |
+	     | (range nil nil :type Color) | Color range <>       |   | 
+	     | (range 0.0 (* 2.0 Ada.Numerics.Pi) :type (digits 18)) | digits 18 range 0.0 .. 2.0 * Ada.Numerics.Pi       |   |
 
              |#
 	     (destructuring-bind (start end &key type) (cdr code)
@@ -198,6 +199,8 @@
 		       (if (and start end)
 			   (emit-ada :code `(dots  ,start ,end))
 			   (emit-ada :code `(dots))))))
+	    (digits (destructuring-bind (n) (cdr code)
+		      (format str "digits ~a" n)))
 	    (=>
 	     #|
                | (=> ((dots 1 120) (char *)))            | 1 .. 120 => '*'                     | 0 |
@@ -695,7 +698,7 @@ begin
 end;
 ")
 
-
+(emit-ada :code `(range 0.0 (* 2.0 Ada.Numerics.Pi) :type (digits 18)))
 
 #+nil
 (let ((def `(package Bounded_Queue_V1
