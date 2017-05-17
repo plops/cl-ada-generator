@@ -222,6 +222,9 @@
 	    (package-body
 	     (destructuring-bind (name &rest body) (cdr code)
 	       (format str "package body ~a is~%~a~&end ~a;" (emit-ada :code name) (emit-ada :code `(statements ,@body)) (emit-ada :code name))))
+	    (package-new ;; generic specialization
+	     (destructuring-bind (name &rest body) (cdr code)
+	       (format str "package ~a is new ~a;" (emit-ada :code name) (emit-ada :code `(statements ,@body)))))
 	    (subtype
 	     (destructuring-bind (name definition) (cdr code)
 	       (format str "subtype ~a is ~a;" (emit-ada :code name) (emit-ada :code definition))))
@@ -391,7 +394,8 @@
 	     (cond ((member (second code) '(|:=| call return))
 		    ;; add semicolon to expressions
 		    (format str "~a;" (emit-ada :code (cdr code))))
-		   ((member (second code) '(if setf decl with procedure block decf incf when unless type record for while package package-body subtype function statement statements incf exit-when raw and-then))
+		   ((member (second code) '(if setf decl with procedure block decf incf when unless type record for while
+					    package package-new package-body subtype function statement statements incf exit-when raw and-then))
 		    ;; procedure .. don't need semicolon
 		    (emit-ada :code (cdr code)))
 		   (t (format nil "not processable statement: ~a, second code = ~a" code (second code)))))
