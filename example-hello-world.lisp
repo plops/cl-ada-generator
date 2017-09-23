@@ -12,8 +12,9 @@
 	       (procedure (Hello_World nil
 				       ((decl ((You "constant String"
 						    (assign-if (< 0 Ada.Command_Line.Argument_Count)
-							(string "world")
-							(call Ada.Command_Line.Argument 1)))
+							
+							       (call Ada.Command_Line.Argument 1)
+							       (string "world")))
 					       ))))
 			  (call Ada.Text_IO.Put (string "Hello, "))
 			  (call Ada.Text_IO.Put_Line You)
