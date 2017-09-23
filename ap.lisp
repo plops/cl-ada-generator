@@ -26,10 +26,11 @@
         (setf (gethash fn-hash *file-hashes*) code-hash)
         (with-open-file (s fn
                            :direction :output
+			   :external-format :utf-8
                            :if-exists :supersede
                            :if-does-not-exist :create)
           (write-sequence code-str s))
-	(sb-ext:run-program "/home/martin/big/ada/bin/gnat" (list "pretty" "-rf" (format nil "-P~a/default.gpr" folder) (format nil "~a" fn)))
+	(sb-ext:run-program "/home/martin/big/gnat/bin/gnat" (list "pretty" "-rf" (format nil "-P~a/default.gpr" folder) (format nil "~a" fn)))
         ))))
 
 (defun print-sufficient-digits-f32 (f)
@@ -72,7 +73,7 @@
   (if code
       (if (listp code)
 	  (case (car code)
-	    (with (format str "with ~{~a~^, ~}" (mapcar #'(lambda (x) (emit-ada :code x)) (cdr code))))
+	    (with (format str "with ~{~a~^, ~};" (mapcar #'(lambda (x) (emit-ada :code x)) (cdr code))))
 	    (use (format str "use ~{~a~^, ~};" (cdr code)))
 	    (with-use (format str "with ~{~a~^, ~}; use ~{~a~^, ~};"
 			      (cdr code)
