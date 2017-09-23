@@ -8,7 +8,7 @@
 
 
 (let ((code `(with-compilation-unit
-		 (with Ada.Command_Line Ada.TextIO)
+		 (with Ada.Command_Line Ada.Text_IO)
 	       (procedure (Hello_World nil
 				       ((decl ((You "constant String"
 						    (assign-if (< 0 Ada.Command_Line.Argument_Count)
@@ -20,7 +20,7 @@
 			  )))
       (gpr `(project Main
 		     (package Compiler
-			      (for-use (call Default_Switches (string "Ada")) (string "-gnatwa")))
+			      (for-use (call Default_Switches (string "Ada")) (comma-list (string "-gnatwa"))))
 		     (package Prove
 			      (for-use Switches (comma-list (string "--level=2")
 							    (string "-j0"))))
@@ -36,3 +36,5 @@
   (write-source #P"/dev/shm/hello_world/" "hello_world" "adb" code)
   (write-source #P"/dev/shm/hello_world/" "main" "gpr" gpr)
   (write-source #P"/dev/shm/hello_world/" "main" "adc" adc))
+
+;; run  cd /dev/shm/hello_world; gprbuild main.gpr
