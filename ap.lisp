@@ -433,7 +433,7 @@
 			(format nil "(~a (~a))"
 				op
 				(emit-ada :code operand))))
-		     ((member (car code) '(+ - * / < <= and or /= = &))
+		     ((member (car code) '(+ - * / < <= and or /= = & in))
 		      ;; handle binary operators
 		      ;; no semicolon
 		      (with-output-to-string (s)
