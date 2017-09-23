@@ -283,6 +283,19 @@
 		    (when false-statement
 		      (format s "else ~a" (emit-ada :code `(statements ,false-statement))))
 		    (format s "end if;"))))
+	    #|
+	    https://en.wikibooks.org/wiki/Ada_Programming/Expressions
+	    Area := (if Is_Spherical then ... else Length * Height);
+	    |#
+	    (assign-if
+	     (destructuring-bind (condition true-statement &optional false-statement) (cdr code)
+	       (with-output-to-string (s)
+		 (format s "(if ( ~a ) then ~a"
+			 (emit-ada :code condition)
+			 (emit-ada :code true-statement))
+		 (when false-statement
+		      (format s " else ~a" (emit-ada :code false-statement)))
+		    (format s ")"))))
 	    (when (destructuring-bind (condition true-statement) (cdr code)
 		    (format str "if ( ~a ) then~&~a~&end if;"
 			    (emit-ada :code condition)

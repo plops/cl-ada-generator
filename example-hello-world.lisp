@@ -11,7 +11,7 @@
 		 (with Ada.Command_Line Ada.TextIO)
 	       (procedure (Hello_World nil
 				       ((decl ((You "constant String"
-						    (if (< 0 Ada.Command_Line.Argument_Count)
+						    (assign-if (< 0 Ada.Command_Line.Argument_Count)
 							(string "世界")
 							(call Ada.Command_Line.Argument 1)))
 					       ))))
