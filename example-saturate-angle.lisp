@@ -10,12 +10,9 @@
 
 	       (function ((Saturate ((Val Float))
 				 :ret Float))
-		(cond ((in Val (dots Low High))
-		       (return Val))
-		      ((< Val Low)
-		       (return Low))
-		      (t
-		       (return High))))))
+		(cond ((in Val (dots Low High)) (return Val))
+		      ((< Val Low)              (return Low))
+		      (t                        (return High))))))
       (gpr `(project Main
 		     (package Compiler
 			      (for-use (call Default_Switches (string "Ada")) (comma-list (string "-gnatwa"))))

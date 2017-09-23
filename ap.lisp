@@ -294,6 +294,33 @@
 		      (format s "else ~a" (emit-ada :code `(statements ,false-statement))))
 		    (format s "end if;"))))
 	    #|
+	    if Val in Low .. High then
+	      return Val;
+	    elsif Val < Low then
+	      return Low;
+	    else
+	      return High;
+	    end if;
+               (cond ((in Val (dots Low High)) (return Val))
+		     ((< Val Low)              (return Low))
+		     (t                        (return High)))
+	    |#
+	    (cond (destructuring-bind (&rest specs) (cdr code)
+		    (with-output-to-string (s)
+		      (loop for e in specs and i from 0 do
+			   (destructuring-bind (condition &rest cmds) e
+			     (assert (not (and (eq condition t) (= i 0))))
+			     (if (eq condition t)
+				 (format s "~%else~%~a"
+					 (emit-ada :code `(statements ,@cmds)))
+				 (format s "~a ~a then~%~a"
+					 (case i
+					   (0 "if")
+					   (t "elsif"))
+					 (emit-ada :code condition)
+					 (emit-ada :code `(statements ,@cmds))))))
+		      (format s "~%end if;~%"))))
+	    #|
 	    https://en.wikibooks.org/wiki/Ada_Programming/Expressions
 	    Area := (if Is_Spherical then ... else Length * Height);
 	    |#
@@ -420,7 +447,7 @@
 	     (cond ((member (second code) '(|:=| call return with))
 		    ;; add semicolon to expressions
 		    (format str "~a;" (emit-ada :code (cdr code))))
-		   ((member (second code) '(if setf decl for-use pragma procedure block decf incf when unless type record for while
+		   ((member (second code) '(if cond setf decl for-use pragma procedure block decf incf when unless type record for while
 					    package package-new package-body subtype function statement statements incf exit-when raw and-then))
 		    ;; procedure .. don't need semicolon
 		    (emit-ada :code (cdr code)))
@@ -873,3 +900,4 @@ end;
   (write-source "average" "adb" code))
 ;; export PATH=~/big/ada/bin/:$PATH
 
+)
