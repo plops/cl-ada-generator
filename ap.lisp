@@ -406,6 +406,8 @@
 								     (emit-ada :code e)))))))))
 	    (raw (destructuring-bind (string) (cdr code)
 		   (format str "~a" string)))
+	    (pragma (destructuring-bind (p) (cdr code)
+		   (format str "pragma ~a;" (emit-ada :code p))))
 	    (and-then (destructuring-bind (clause-1 &rest clauses) (cdr code)
 			(format str "~a~{ and then ~a~}" (emit-ada :code clause-1) (mapcar #'(lambda (x) (emit-ada :code x)) clauses))))
 	    (pre (destructuring-bind (condition) (cdr code)
@@ -416,7 +418,7 @@
 	     (cond ((member (second code) '(|:=| call return))
 		    ;; add semicolon to expressions
 		    (format str "~a;" (emit-ada :code (cdr code))))
-		   ((member (second code) '(if setf decl with for-use procedure block decf incf when unless type record for while
+		   ((member (second code) '(if setf decl with for-use pragma procedure block decf incf when unless type record for while
 					    package package-new package-body subtype function statement statements incf exit-when raw and-then))
 		    ;; procedure .. don't need semicolon
 		    (emit-ada :code (cdr code)))
