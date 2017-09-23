@@ -153,6 +153,12 @@
 					     (emit-ada :code `(statements ,@body))
 					     name)
 				     (emit-ada :code `(statements ,@decl))))))
+	    (new (destructuring-bind (expr) (cdr code)
+		   (format str "new ~a" (emit-ada :code expr))))
+	    (generic-function (destructuring-bind (name expr) (cdr code)
+				(format str "function ~a is ~a;"
+					name
+					(emit-ada :code expr))))
 	    (array
 	     #|
 	     | (array Error_Code "constant String")                   | array (Error_Code) of constant String                      | A |

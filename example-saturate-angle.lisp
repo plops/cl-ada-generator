@@ -17,8 +17,8 @@
 				 ((< Val Low)              (return Low))
 				 (t                        (return High))))))
        (saturate_angle_ads `(with-compilation-unit
-				(with Saturate)
-			      (function ((Saturate_Angle)))))
+				(statements (with Saturate))
+			      (generic-function Saturate_Angle (new (call Saturate (=> (High 0) (Low 360)))))))
        (gpr `(project Main
 		      (package Compiler
 			       (for-use (call Default_Switches (string "Ada")) (comma-list (string "-gnatwa"))))
@@ -35,6 +35,7 @@
 	       (pragma (call Warnings Off (string "subprogram * has no effect"))))))
   (ensure-directories-exist dir-name)
   (write-source dir-name "saturate" "ads" saturate_ads)
+  (write-source dir-name "saturate_angle" "ads" saturate_angle_ads)
   (write-source dir-name "saturate" "adb" saturate_adb)
   (write-source dir-name "main" "gpr" gpr)
   (write-source dir-name "main" "adc" adc))
