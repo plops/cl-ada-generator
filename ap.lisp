@@ -217,6 +217,14 @@
 									 "others"
 									 (emit-ada :code choice)) (emit-ada :code stmt))))))
 
+	    (project
+	     (destructuring-bind (name &rest body) (cdr code)
+	       (format str "project ~a is~%~a~&end ~a;" (emit-ada :code name) (emit-ada :code `(statements ,@body)) (emit-ada :code name))))
+	    (for-use (destructuring-bind (attribute value) (cdr code)
+		      (format str "for ~a use ~a;"
+			      (emit-ada :code attribute)
+			      (emit-ada :code value)
+			      )))
 	    (package
 	     (destructuring-bind (name &rest body) (cdr code)
 	       (format str "package ~a is~%~a~&end ~a;" (emit-ada :code name) (emit-ada :code `(statements ,@body)) (emit-ada :code name))))
@@ -408,7 +416,7 @@
 	     (cond ((member (second code) '(|:=| call return))
 		    ;; add semicolon to expressions
 		    (format str "~a;" (emit-ada :code (cdr code))))
-		   ((member (second code) '(if setf decl with procedure block decf incf when unless type record for while
+		   ((member (second code) '(if setf decl with for-use procedure block decf incf when unless type record for while
 					    package package-new package-body subtype function statement statements incf exit-when raw and-then))
 		    ;; procedure .. don't need semicolon
 		    (emit-ada :code (cdr code)))
