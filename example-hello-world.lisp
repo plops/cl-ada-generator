@@ -5,17 +5,17 @@
 
 (in-package :cl-ada-generator)
 
-
+;; https://github.com/AdaCore/Compile_And_Prove_Demo/tree/master/examples/hello_world
 
 (let ((code `(with-compilation-unit
 		 (with Ada.Command_Line Ada.Text_IO)
-	       (procedure (Hello_World nil
-				       ((decl ((You "constant String"
-						    (assign-if (< 0 Ada.Command_Line.Argument_Count)
+	       (procedure ((Hello_World nil
+					:decl ((decl ((You "constant String"
+							   (assign-if (< 0 Ada.Command_Line.Argument_Count)
 							
-							       (call Ada.Command_Line.Argument 1)
-							       (string "world")))
-					       ))))
+								      (call Ada.Command_Line.Argument 1)
+								      (string "world")))
+						      )))))
 			  (call Ada.Text_IO.Put (string "Hello, "))
 			  (call Ada.Text_IO.Put_Line You)
 			  )))

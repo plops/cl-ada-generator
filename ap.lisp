@@ -73,7 +73,7 @@
   (if code
       (if (listp code)
 	  (case (car code)
-	    (with (format str "with ~{~a~^, ~};" (mapcar #'(lambda (x) (emit-ada :code x)) (cdr code))))
+	    (with (format str "with ~{~a~^, ~}" (mapcar #'(lambda (x) (emit-ada :code x)) (cdr code))))
 	    (use (format str "use ~{~a~^, ~};" (cdr code)))
 	    (with-use (format str "with ~{~a~^, ~}; use ~{~a~^, ~};"
 			      (cdr code)
@@ -117,40 +117,42 @@
 			 (format str "~a(~{~a~^; ~})"
 				 name
 				 (emit-ada :code `(:params-discriminant ,params)))))
-	    (procedure (destructuring-bind ((name params &optional decl) &rest body) (cdr code)
+	    (procedure (destructuring-bind (((name params &key cond decl)) &rest body) (cdr code)
 			 #+nil (push (list :name name
 					   :params params
 					   :body body)
 				     *env-functions*)
-			 (format str "procedure ~a ~a~@[~a~];"
+			 (format str "procedure ~a ~a~%~a~%~@[~a~];"
 				 name
 				 (if params
 				     (format nil "(~{~a~^; ~})" (emit-ada :code `(:params ,params)))
 				     "")
+				 (emit-ada :code cond)
 				 (if body
 				     (format nil " is~%~a~%begin~%~aend ~a~%"
 					   (emit-ada :code  `(statements ,@decl))
 					   (emit-ada :code `(statements ,@body))
 					   name)
 				     (emit-ada :code  `(statements ,@decl))))))
-	    (function (destructuring-bind ((name params ret &optional decl) &rest body) (cdr code)
+	    (function (destructuring-bind (((name params &key ret cond decl)) &rest body) (cdr code)
 			 #+nil (push (list :name name
 					   :params params
 					   :ret ret
 					   :body body)
 				     *env-functions*)
-			 (format str "function ~a ~a return ~a~@[~a~];"
+			 (format str "function ~a ~a return ~a~%~a~%~@[~a~];"
 				 name
 				 (if params
 				     (format nil "(~{~a~^; ~})" (emit-ada :code `(:params ,params)))
 				     "")
 				 (emit-ada :code ret)
+				 (emit-ada :code `(with ,@cond))
 				 (if body
-				   (format nil " is~%~a~%begin~%~aend ~a~%"
-					   (emit-ada :code `(statements ,@decl))
-					   (emit-ada :code `(statements ,@body))
-					   name)
-				   (emit-ada :code `(statements ,@decl))))))
+				     (format nil " is~%~a~%begin~%~aend ~a~%"
+					     (emit-ada :code `(statements ,@decl))
+					     (emit-ada :code `(statements ,@body))
+					     name)
+				     (emit-ada :code `(statements ,@decl))))))
 	    (array
 	     #|
 	     | (array Error_Code "constant String")                   | array (Error_Code) of constant String                      | A |
@@ -415,10 +417,10 @@
 	    (post (destructuring-bind (condition) (cdr code)
 		       (format str "Post => ~a" (emit-ada :code condition))))
 	    (statement ;; add semicolon
-	     (cond ((member (second code) '(|:=| call return))
+	     (cond ((member (second code) '(|:=| call return with))
 		    ;; add semicolon to expressions
 		    (format str "~a;" (emit-ada :code (cdr code))))
-		   ((member (second code) '(if setf decl with for-use pragma procedure block decf incf when unless type record for while
+		   ((member (second code) '(if setf decl for-use pragma procedure block decf incf when unless type record for while
 					    package package-new package-body subtype function statement statements incf exit-when raw and-then))
 		    ;; procedure .. don't need semicolon
 		    (emit-ada :code (cdr code)))
