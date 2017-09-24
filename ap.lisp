@@ -12,17 +12,6 @@
 
 (defparameter *file-hashes* (make-hash-table))
 
-#|
-begin 
- -- code
-exception
-when Constraint_Error | Storage_Error => 
-  -- some code
-when others =>
-  -- code
-end;
-|#
-;(handler-case form &rest cases)
 
 (defun write-source (folder name extension code)
   (let* ((fn (merge-pathnames (format nil "~a.~a" name extension)
@@ -264,6 +253,29 @@ end;
 	    (subtype
 	     (destructuring-bind (name definition) (cdr code)
 	       (format str "subtype ~a is ~a;" (emit-ada :code name) (emit-ada :code definition))))
+	    
+	    (handler-case
+		#|
+	    begin 
+	    -- code
+	    exception
+	    when Constraint_Error | Storage_Error => 
+	    -- some code
+	    when others =>
+	    -- code
+	    end;
+	    (handler-case form &rest cases)
+	    |#
+		(destructuring-bind (form  &rest cases) (cdr code)
+		  (emit-ada :code `(block ,@form
+				     (raw "exception")
+				     ,@(loop for (err stmts) in cases appending
+					    (list `(raw " when ")
+						  (emit-ada :code err)
+						  `(raw " => ")
+						  `(statements ,stmts)))))
+		  ))
+
 	    (type
 	     #|
               | (type Color (comma-list White Red Yellow))                                      | type Color is (White, Red, Yellow)                               | 0 |
