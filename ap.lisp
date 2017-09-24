@@ -12,6 +12,18 @@
 
 (defparameter *file-hashes* (make-hash-table))
 
+#|
+begin 
+ -- code
+exception
+when Constraint_Error | Storage_Error => 
+  -- some code
+when others =>
+  -- code
+end;
+|#
+;(handler-case form &rest cases)
+
 (defun write-source (folder name extension code)
   (let* ((fn (merge-pathnames (format nil "~a.~a" name extension)
                               folder #+nil (user-homedir-pathname)))
