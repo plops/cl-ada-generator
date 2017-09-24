@@ -41,7 +41,7 @@
 	 (s (format nil "~E" ff)))
    (assert (= 0s0 (- ff
 		     (read-from-string s))))
-   (format nil "~af" s)))
+   (format nil "~a" s)))
 
 #+nil
 (print-sufficient-digits-f32 1s0)
@@ -127,7 +127,9 @@
 				 (if params
 				     (format nil "(~{~a~^; ~})" (emit-ada :code `(:params ,params)))
 				     "")
-				 (emit-ada :code cond)
+				 (if cond
+				     (emit-ada :code `(with ,@cond))
+				     "")
 				 (if body
 				     (format nil " is~%~a~%begin~%~aend ~a~%"
 					   (emit-ada :code  `(statements ,@decl))
@@ -146,7 +148,9 @@
 				     (format nil "(~{~a~^; ~})" (emit-ada :code `(:params ,params)))
 				     "")
 				 (emit-ada :code ret)
-				 (emit-ada :code `(with ,@cond))
+				 (if cond
+				     (emit-ada :code `(with ,@cond))
+				     "")
 				 (if body
 				     (format nil " is~%~a~%begin~%~aend ~a~%"
 					     (emit-ada :code `(statements ,@decl))
@@ -158,7 +162,8 @@
 	    (generic-function (destructuring-bind (name expr) (cdr code)
 				(format str "function ~a is ~a;"
 					name
-					(emit-ada :code expr))))
+					(emit-ada :code expr)
+				)))
 	    (array
 	     #|
 	     | (array Error_Code "constant String")                   | array (Error_Code) of constant String                      | A |
@@ -905,5 +910,3 @@ end;
 		     (call New_Line)))))
   (write-source "average" "adb" code))
 ;; export PATH=~/big/ada/bin/:$PATH
-
-)

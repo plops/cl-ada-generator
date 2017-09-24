@@ -1,5 +1,5 @@
+(eval-when (:compile-toplevel :execute :load-toplevel)
   (ql:quickload :cl-ada-generator))
-
 (in-package :cl-ada-generator)
 
 ;; https://github.com/AdaCore/Compile_And_Prove_Demo/
@@ -18,7 +18,7 @@
 				 (t                        (return High))))))
        (saturate_angle_ads `(with-compilation-unit
 				(statements (with Saturate))
-			      (generic-function Saturate_Angle (new (call Saturate (=> (High 0) (Low 360)))))))
+			      (generic-function Saturate_Angle (new (call Saturate (=> (High 0.0) (Low 360.0)))))))
        (gpr `(project Main
 		      (package Compiler
 			       (for-use (call Default_Switches (string "Ada")) (comma-list (string "-gnatwa"))))
