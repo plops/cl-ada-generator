@@ -18,7 +18,7 @@
 				 (t                        (return High))))))
        (saturate_angle_ads `(with-compilation-unit
 				(statements (with Saturate))
-			      (generic-function Saturate_Angle (new (call Saturate (=> (High 0.0) (Low 360.0)))))))
+			      (generic-function Saturate_Angle (new (call Saturate (=> (Low 0.0) (High 360.0) ))))))
        (gpr `(project Main
 		      (package Compiler
 			       (for-use (call Default_Switches (string "Ada")) (comma-list (string "-gnatwa"))))
